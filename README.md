@@ -51,6 +51,19 @@ each one depends on the one before it:
 | 2     | `0002_is_admin_helper.sql`    | Creates `is_admin()`, used by every policy       |
 | 3     | `0003_rls_policies.sql`       | Enables RLS, grants, and all policies            |
 | 4     | `0004_handle_new_user.sql`    | Trigger that creates a profile row on signup     |
+| 5     | `0005_protect_vehicle_status.sql` | Trigger blocking non-admin status changes    |
+| 6     | `0006_fix_status_guard.sql`   | Recreates that trigger as SECURITY INVOKER       |
+| 7     | `0007_contact_messages.sql`   | Contact form table (anyone inserts, admin reads) |
+| 8     | `0008_vehicle_photos_storage.sql` | `vehicle-photos` bucket + storage policies   |
+
+### Vehicle photos
+
+The `vehicle-photos` bucket is **private**. `vehicle_photos.url` stores the
+storage **path**, not an https URL — a signed URL expires, so persisting one
+would rot. Paths follow `<user_id>/<vehicle_id>/<random>.<ext>`; the leading
+user-id segment is what the storage policies check via
+`storage.foldername(name)[1]`. The UI signs a short-lived URL at render time
+(`src/lib/storage.ts`).
 
 ### Via the Supabase dashboard (simplest)
 

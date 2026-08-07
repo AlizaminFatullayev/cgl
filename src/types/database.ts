@@ -77,3 +77,13 @@ export interface ShippingRate {
   branch: string | null
   rate: number | null
 }
+
+/** See 0007_contact_messages.sql. Insertable by anyone, readable by admins. */
+export interface ContactMessage {
+  id: string
+  name: string
+  email: string
+  vin: string | null
+  message: string
+  created_at: string
+}

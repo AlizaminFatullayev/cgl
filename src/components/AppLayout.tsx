@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { LogOut, Ship } from 'lucide-react'
 import { useAuth } from '@/auth/use-auth'
 import { Button } from '@/components/ui/button'
@@ -32,10 +32,11 @@ export function AppLayout() {
     <div className="min-h-svh">
       <header className="border-b">
         <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-4 py-3">
-          <span className="mr-4 flex items-center gap-2 font-semibold">
+          {/* Links back to the public site, which now owns "/". */}
+          <Link to="/" className="mr-4 flex items-center gap-2 font-semibold">
             <Ship className="size-5" />
             CGL
-          </span>
+          </Link>
 
           {NAV_ITEMS.map((item) => (
             <NavLink key={item.to} to={item.to} className={linkClass}>
