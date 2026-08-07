@@ -232,9 +232,9 @@ export function AddVehiclePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Add a vehicle</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Add a vehicle</h1>
 
-      <Card className="max-w-3xl">
+      <Card className="border-border/60 shadow-soft max-w-3xl">
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <CardHeader>
             <CardTitle>Vehicle details</CardTitle>
@@ -291,7 +291,7 @@ export function AddVehiclePage() {
                   {files.map((file, index) => (
                     <li
                       key={`${file.name}-${index}`}
-                      className="flex items-center justify-between gap-2 rounded-md border px-3 py-1.5 text-sm"
+                      className="bg-secondary/50 border-border/60 flex items-center justify-between gap-2 rounded-lg border px-3 py-1.5 text-sm"
                     >
                       <span className="truncate">{file.name}</span>
                       <Button
@@ -341,13 +341,18 @@ export function AddVehiclePage() {
           </CardContent>
 
           <CardFooter className="mt-6 gap-3">
-            <Button type="submit" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              className="shadow-soft rounded-full px-6"
+              disabled={isSubmitting}
+            >
               {isSubmitting && <Loader2 className="size-4 animate-spin" />}
               Save vehicle
             </Button>
             <Button
               type="button"
               variant="ghost"
+              className="rounded-full px-5"
               onClick={() => navigate('/vehicles')}
             >
               Cancel

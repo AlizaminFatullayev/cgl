@@ -7,21 +7,36 @@ import { formatCurrency } from '@/lib/format'
 import { AdminError } from '@/components/AdminError'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 function StatCard({
   label,
   value,
   hint,
+  accent = false,
 }: {
   label: string
   value: string | number
   hint?: string
+  accent?: boolean
 }) {
   return (
-    <Card>
+    <Card
+      className={cn(
+        'border-border/60 shadow-soft',
+        accent && 'bg-gradient-subtle',
+      )}
+    >
       <CardHeader>
         <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-2xl tabular-nums">{value}</CardTitle>
+        <CardTitle
+          className={cn(
+            'text-3xl font-bold tabular-nums',
+            accent && 'text-primary',
+          )}
+        >
+          {value}
+        </CardTitle>
       </CardHeader>
       {hint && (
         <CardContent className="text-muted-foreground text-sm">
@@ -77,9 +92,9 @@ export function AdminOverviewPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Customers" value={stats.customers} />
         <StatCard label="Vehicles" value={stats.vehicles_total} />
         <StatCard
@@ -92,22 +107,26 @@ export function AdminOverviewPage() {
           label="Total outstanding"
           value={formatCurrency(stats.outstanding)}
           hint="Sum of total_amount − paid"
+          accent
         />
       </div>
 
-      <section className="space-y-4">
+      <section className="space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold tracking-tight">
+          <h2 className="text-xl font-bold tracking-tight">
             Vehicles by status
           </h2>
           <Link
             to="/admin/vehicles"
-            className={buttonVariants({ variant: 'outline', size: 'sm' })}
+            className={cn(
+              buttonVariants({ variant: 'outline', size: 'sm' }),
+              'rounded-full px-4',
+            )}
           >
             Manage vehicles
           </Link>
         </div>
-        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid gap-5 sm:grid-cols-3 lg:grid-cols-5">
           {byStatus.map((item) => (
             <StatCard key={item.label} label={item.label} value={item.value} />
           ))}

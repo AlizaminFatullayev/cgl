@@ -7,6 +7,7 @@ import {
 } from '@/lib/shipping-rates'
 import type { ShippingRate } from '@/types/database'
 import { formatCurrency } from '@/lib/format'
+import { Section } from '@/components/Section'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -69,20 +70,26 @@ export function CalculatorPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 py-16">
-        <Loader2 className="text-muted-foreground size-5 animate-spin" />
-        <span className="text-muted-foreground">Loading rates…</span>
-      </div>
+      <Section>
+        <div className="flex items-center gap-2">
+          <Loader2 className="text-muted-foreground size-5 animate-spin" />
+          <span className="text-muted-foreground">Loading rates…</span>
+        </div>
+      </Section>
     )
   }
 
   return (
-    <div className="space-y-8">
-      <header className="space-y-3">
-        <h1 className="text-3xl font-semibold tracking-tight">
+    <Section>
+      <div className="space-y-8">
+      <header className="max-w-2xl space-y-4">
+        <span className="bg-accent text-accent-foreground inline-flex rounded-full px-4 py-2 text-sm font-medium">
+          Transportation pricing
+        </span>
+        <h1 className="text-4xl font-bold tracking-tight text-balance sm:text-5xl">
           Shipping calculator
         </h1>
-        <p className="text-muted-foreground max-w-2xl">
+        <p className="text-muted-foreground text-lg">
           Choose the auction state and branch to see the transportation total.
           Rates are read from our published rate table.
         </p>
@@ -112,7 +119,7 @@ export function CalculatorPage() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-        <Card>
+        <Card className="border-border/60 shadow-soft">
           <CardHeader>
             <CardTitle>Route</CardTitle>
             <CardDescription>
@@ -179,7 +186,7 @@ export function CalculatorPage() {
           </CardContent>
         </Card>
 
-        <Card className="h-fit">
+        <Card className="bg-gradient-subtle border-border/60 shadow-soft h-fit">
           <CardHeader>
             <CardTitle>Transportation total</CardTitle>
             <CardDescription>
@@ -190,7 +197,7 @@ export function CalculatorPage() {
           </CardHeader>
           <CardContent>
             {/* The stored rate IS the final price. Never apply a markup here. */}
-            <p className="text-3xl font-semibold tabular-nums">
+            <p className="text-primary text-4xl font-bold tabular-nums">
               {selectedBranch ? formatCurrency(selectedBranch.rate) : '—'}
             </p>
             {selectedBranch && (
@@ -202,6 +209,7 @@ export function CalculatorPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </Section>
   )
 }

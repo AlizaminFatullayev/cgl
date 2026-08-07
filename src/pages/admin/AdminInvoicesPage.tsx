@@ -193,8 +193,8 @@ export function AdminInvoicesPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Invoices</h1>
-        <Button onClick={() => setCreating(true)}>
+        <h1 className="text-3xl font-bold tracking-tight">Invoices</h1>
+        <Button className="shadow-soft rounded-full px-6" onClick={() => setCreating(true)}>
           <Plus className="size-4" />
           Create invoice
         </Button>
@@ -209,9 +209,9 @@ export function AdminInvoicesPage() {
           <span className="text-muted-foreground">Loading invoices…</span>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
+        <div className="overflow-x-auto rounded-2xl border border-border/60 bg-card shadow-soft">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-secondary/50">
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Customer</TableHead>
@@ -399,10 +399,10 @@ export function AdminInvoicesPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setCreating(false)}>
+            <Button variant="ghost" className="rounded-full px-5" onClick={() => setCreating(false)}>
               Cancel
             </Button>
-            <Button onClick={() => void createInvoice()} disabled={formSaving}>
+            <Button className="shadow-soft rounded-full px-6" onClick={() => void createInvoice()} disabled={formSaving}>
               {formSaving && <Loader2 className="size-4 animate-spin" />}
               Create invoice
             </Button>

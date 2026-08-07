@@ -12,8 +12,9 @@ const ADMIN_NAV = [
 
 export function AdminLayout() {
   return (
-    <div className="space-y-6">
-      <nav className="flex flex-wrap gap-1 border-b pb-3">
+    <div className="space-y-8">
+      {/* Same pill language as the public and customer shells -- one product. */}
+      <nav className="border-border/60 bg-secondary/50 flex flex-wrap gap-1 rounded-2xl border p-1.5">
         {ADMIN_NAV.map((item) => (
           <NavLink
             key={item.to}
@@ -21,9 +22,9 @@ export function AdminLayout() {
             end={item.end}
             className={({ isActive }) =>
               cn(
-                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                'transition-smooth rounded-full px-4 py-2 text-sm font-medium',
                 isActive
-                  ? 'bg-secondary text-secondary-foreground'
+                  ? 'bg-card text-primary shadow-soft'
                   : 'text-muted-foreground hover:text-foreground',
               )
             }

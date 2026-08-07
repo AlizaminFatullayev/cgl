@@ -165,21 +165,29 @@ export function AdminCustomersPage() {
   if (selected) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="rounded-full px-4"
+          onClick={() => setSelected(null)}
+        >
           <ArrowLeft className="size-4" />
           All customers
         </Button>
 
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight">
               {displayText(selected.full_name, 'Unnamed customer')}
             </h1>
             <p className="text-muted-foreground text-sm">
               {displayText(selected.email)}
             </p>
           </div>
-          <Button onClick={() => setAdjustFor(selected)}>
+          <Button
+            className="shadow-soft rounded-full px-6"
+            onClick={() => setAdjustFor(selected)}
+          >
             <Wallet className="size-4" />
             Adjust balance
           </Button>
@@ -187,24 +195,24 @@ export function AdminCustomersPage() {
 
         {detailError && <AdminError message={detailError} />}
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card>
+        <div className="grid gap-5 sm:grid-cols-3">
+          <Card className="bg-gradient-subtle border-border/60 shadow-soft">
             <CardHeader>
               <CardDescription>Balance</CardDescription>
-              <CardTitle className="text-2xl tabular-nums">
+              <CardTitle className="text-primary text-3xl font-bold tabular-nums">
                 {formatCurrency(selected.balance)}
               </CardTitle>
             </CardHeader>
           </Card>
-          <Card>
+          <Card className="border-border/60 shadow-soft">
             <CardHeader>
               <CardDescription>Vehicles</CardDescription>
-              <CardTitle className="text-2xl tabular-nums">
+              <CardTitle className="text-3xl font-bold tabular-nums">
                 {vehicles?.length ?? '—'}
               </CardTitle>
             </CardHeader>
           </Card>
-          <Card>
+          <Card className="border-border/60 shadow-soft">
             <CardHeader>
               <CardDescription>Joined</CardDescription>
               <CardTitle className="text-lg">
@@ -215,10 +223,10 @@ export function AdminCustomersPage() {
         </div>
 
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold tracking-tight">Vehicles</h2>
-          <div className="overflow-x-auto rounded-lg border">
+          <h2 className="text-xl font-bold tracking-tight">Vehicles</h2>
+          <div className="overflow-x-auto rounded-2xl border border-border/60 bg-card shadow-soft">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-secondary/50">
                 <TableRow>
                   <TableHead>Vehicle</TableHead>
                   <TableHead>VIN</TableHead>
@@ -270,12 +278,12 @@ export function AdminCustomersPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold tracking-tight">
+          <h2 className="text-xl font-bold tracking-tight">
             Transaction history
           </h2>
-          <div className="overflow-x-auto rounded-lg border">
+          <div className="overflow-x-auto rounded-2xl border border-border/60 bg-card shadow-soft">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-secondary/50">
                 <TableRow>
                   <TableHead>Date</TableHead>
                   <TableHead>Type</TableHead>
@@ -373,10 +381,10 @@ export function AdminCustomersPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setAdjustFor(null)}>
+            <Button variant="ghost" className="rounded-full px-5" onClick={() => setAdjustFor(null)}>
               Cancel
             </Button>
-            <Button onClick={() => void submitAdjustment()} disabled={adjusting}>
+            <Button className="shadow-soft rounded-full px-6" onClick={() => void submitAdjustment()} disabled={adjusting}>
               {adjusting && <Loader2 className="size-4 animate-spin" />}
               Apply adjustment
             </Button>
@@ -388,7 +396,7 @@ export function AdminCustomersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
 
       <div className="space-y-2 sm:max-w-sm">
         <Label htmlFor="customer-search">Search</Label>
@@ -412,9 +420,9 @@ export function AdminCustomersPage() {
           <span className="text-muted-foreground">Loading customers…</span>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
+        <div className="overflow-x-auto rounded-2xl border border-border/60 bg-card shadow-soft">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-secondary/50">
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
@@ -450,6 +458,7 @@ export function AdminCustomersPage() {
                       <Button
                         variant="outline"
                         size="sm"
+                        className="rounded-full px-4"
                         onClick={() => void openCustomer(customer)}
                       >
                         Open
@@ -457,6 +466,7 @@ export function AdminCustomersPage() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="rounded-full px-4"
                         onClick={() => setAdjustFor(customer)}
                       >
                         <Wallet className="size-4" />

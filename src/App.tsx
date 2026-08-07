@@ -14,6 +14,7 @@ import { ServicesPage } from '@/pages/public/ServicesPage'
 import { AboutPage } from '@/pages/public/AboutPage'
 import { ContactPage } from '@/pages/public/ContactPage'
 import { CalculatorPage } from '@/pages/public/CalculatorPage'
+import { TrackingPage } from '@/pages/public/TrackingPage'
 import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 import { VehiclesPage } from '@/pages/dashboard/VehiclesPage'
 import { AddVehiclePage } from '@/pages/dashboard/AddVehiclePage'
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/calculator" element={<CalculatorPage />} />
+            <Route path="/tracking" element={<TrackingPage />} />
           </Route>
 
           {/* Signed-in area */}

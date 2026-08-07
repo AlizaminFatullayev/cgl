@@ -6,6 +6,7 @@ import { useAuth } from '@/auth/use-auth'
 import type { Vehicle, VehiclePhoto } from '@/types/database'
 import { buttonVariants } from '@/components/ui/button'
 import { VehicleCard, type VehicleWithPhotos } from '@/components/VehicleCard'
+import { cn } from '@/lib/utils'
 
 export function VehiclesPage() {
   const { session } = useAuth()
@@ -80,8 +81,11 @@ export function VehiclesPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">My vehicles</h1>
-        <Link to="/vehicles/new" className={buttonVariants()}>
+        <h1 className="text-3xl font-bold tracking-tight">My vehicles</h1>
+        <Link
+          to="/vehicles/new"
+          className={cn(buttonVariants(), 'shadow-soft rounded-full px-6')}
+        >
           <Plus className="size-4" />
           Add vehicle
         </Link>
@@ -105,13 +109,16 @@ export function VehiclesPage() {
       )}
 
       {!loading && !error && vehicles.length === 0 && (
-        <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed p-10 text-center">
+        <div className="bg-gradient-subtle border-border/60 flex flex-col items-center gap-4 rounded-3xl border border-dashed p-12 text-center">
           <p className="text-muted-foreground">
             You have not added a vehicle yet.
           </p>
           <Link
             to="/vehicles/new"
-            className={buttonVariants({ variant: 'outline' })}
+            className={cn(
+              buttonVariants({ variant: 'outline' }),
+              'bg-card rounded-full px-6',
+            )}
           >
             Add your first vehicle
           </Link>
@@ -119,7 +126,7 @@ export function VehiclesPage() {
       )}
 
       {!loading && !error && vehicles.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-2">
           {vehicles.map((vehicle) => (
             <VehicleCard key={vehicle.id} vehicle={vehicle} />
           ))}

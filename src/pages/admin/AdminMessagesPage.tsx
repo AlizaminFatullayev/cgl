@@ -8,6 +8,7 @@ import { AdminError } from '@/components/AdminError'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 export function AdminMessagesPage() {
   const [messages, setMessages] = useState<ContactMessage[]>([])
@@ -63,7 +64,7 @@ export function AdminMessagesPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Messages</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
         {unreadCount > 0 && <Badge>{unreadCount} unread</Badge>}
       </div>
 
@@ -76,15 +77,20 @@ export function AdminMessagesPage() {
           <span className="text-muted-foreground">Loading messages…</span>
         </div>
       ) : messages.length === 0 ? (
-        <div className="text-muted-foreground rounded-lg border border-dashed p-10 text-center">
+        <div className="bg-gradient-subtle text-muted-foreground border-border/60 rounded-3xl border border-dashed p-12 text-center">
           No messages yet.
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {messages.map((message) => (
             <Card
               key={message.id}
-              className={message.is_read ? 'opacity-70' : undefined}
+              className={cn(
+                'border-border/60 shadow-soft transition-smooth',
+                message.is_read
+                  ? 'bg-card/60'
+                  : 'border-primary/30 bg-card',
+              )}
             >
               <CardHeader>
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -93,7 +99,7 @@ export function AdminMessagesPage() {
                       {message.is_read ? (
                         <MailOpen className="text-muted-foreground size-4" />
                       ) : (
-                        <Mail className="size-4" />
+                        <Mail className="text-primary size-4" />
                       )}
                       {displayText(message.name, 'Unnamed sender')}
                       {!message.is_read && <Badge>New</Badge>}
@@ -109,6 +115,7 @@ export function AdminMessagesPage() {
                   <Button
                     variant="outline"
                     size="sm"
+                    className="rounded-full px-4"
                     onClick={() => void toggleRead(message)}
                     disabled={savingId === message.id}
                   >

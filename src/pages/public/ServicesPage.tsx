@@ -1,56 +1,54 @@
-import { Anchor, Container, FileText, Ship, Truck, Warehouse } from 'lucide-react'
+import { FileText, Gavel, Package, ShieldCheck, Truck } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Section, SectionHeading } from '@/components/Section'
 
-// TODO(content): confirm this service list and rewrite the descriptions with
-// the real copy from the original site.
 const SERVICES = [
   {
+    icon: Gavel,
+    title: 'Auction Bidding',
+    body: 'Copart and IAAI — we bid live or accept your won lot.',
+  },
+  {
     icon: Truck,
-    title: 'Inland transportation',
-    body: 'Pickup from any auction branch and delivery to the departure port. Rates for every state and branch are published in our calculator.',
+    title: 'Inland Trucking',
+    body: 'Yard pickup to loading port within 5–7 days nationwide.',
   },
   {
-    icon: Warehouse,
-    title: 'Warehouse handling',
-    body: 'Short-term storage at the port warehouse while the vehicle waits for its container slot.',
+    icon: Package,
+    title: 'Port Loading',
+    body: 'Container, RoRo, or consolidated loading at major US ports.',
   },
   {
-    icon: Container,
-    title: 'Container loading',
-    body: 'Consolidated and dedicated container loading, with photos taken before the container is sealed.',
-  },
-  {
-    icon: Ship,
-    title: 'Ocean freight',
-    body: 'Booking with the shipping line, container and booking numbers recorded against your vehicle.',
-  },
-  {
-    icon: Anchor,
-    title: 'Port handling at destination',
-    body: 'Unloading, terminal handling, and release coordination with the receiver named on the file.',
+    icon: ShieldCheck,
+    title: 'Cargo Insurance',
+    body: 'FREE all-risk coverage from yard to port — 0%, no extra fees.',
   },
   {
     icon: FileText,
-    title: 'Documentation',
-    body: 'Title, bill of lading, and export paperwork prepared and tracked alongside the shipment.',
+    title: 'Customs & Docs',
+    body: 'Title work, bill of lading, and destination customs support.',
   },
 ]
 
 export function ServicesPage() {
   return (
-    <div className="space-y-10">
-      <header className="space-y-3">
-        <h1 className="text-3xl font-semibold tracking-tight">Services</h1>
-        <p className="text-muted-foreground max-w-2xl">
-          Everything between the auction lot and the destination port.
-        </p>
-      </header>
+    <Section>
+      <SectionHeading
+        eyebrow="SERVICES"
+        title="Everything you need to import a car"
+        subtitle="From the auction floor to your front door, Caspian Global Logistics covers every leg of the journey."
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {SERVICES.map((service) => (
-          <Card key={service.title}>
+          <Card
+            key={service.title}
+            className="border-border/60 shadow-soft transition-smooth hover:shadow-elegant"
+          >
             <CardHeader>
-              <service.icon className="text-muted-foreground size-5" />
+              <span className="bg-accent text-accent-foreground mb-1 flex size-10 items-center justify-center rounded-xl">
+                <service.icon className="size-5" />
+              </span>
               <CardTitle className="text-base">{service.title}</CardTitle>
             </CardHeader>
             <CardContent className="text-muted-foreground text-sm">
@@ -59,6 +57,6 @@ export function ServicesPage() {
           </Card>
         ))}
       </div>
-    </div>
+    </Section>
   )
 }

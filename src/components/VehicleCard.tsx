@@ -17,7 +17,7 @@ export interface VehicleWithPhotos extends Vehicle {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-4">
+    <div className="border-border/40 flex justify-between gap-4 border-b py-1.5 last:border-b-0">
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="text-right font-medium">{value}</dd>
     </div>
@@ -44,7 +44,7 @@ export function VehicleCard({ vehicle }: { vehicle: VehicleWithPhotos }) {
   }, [firstPhoto])
 
   return (
-    <Card>
+    <Card className="border-border/60 shadow-soft transition-smooth hover:shadow-elegant">
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <CardTitle className="text-base">{vehicleTitle(vehicle)}</CardTitle>
@@ -54,7 +54,7 @@ export function VehicleCard({ vehicle }: { vehicle: VehicleWithPhotos }) {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <div className="bg-muted flex aspect-video items-center justify-center overflow-hidden rounded-md">
+        <div className="bg-secondary flex aspect-video items-center justify-center overflow-hidden rounded-xl">
           {thumbnail ? (
             <img
               src={thumbnail}
@@ -67,7 +67,7 @@ export function VehicleCard({ vehicle }: { vehicle: VehicleWithPhotos }) {
           )}
         </div>
 
-        <dl className="space-y-1.5 text-sm">
+        <dl className="text-sm">
           <DetailRow label="VIN" value={displayText(vehicle.vin)} />
           <DetailRow label="Lot" value={displayText(vehicle.lot_number)} />
           <DetailRow

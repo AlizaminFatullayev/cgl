@@ -281,7 +281,7 @@ export function AdminVehiclesPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Vehicles</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Vehicles</h1>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-2">
@@ -353,9 +353,9 @@ export function AdminVehiclesPage() {
             {filtered.length} of {vehicles.length} vehicles
           </p>
 
-          <div className="overflow-x-auto rounded-lg border">
+          <div className="overflow-x-auto rounded-2xl border border-border/60 bg-card shadow-soft">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-secondary/50">
                 <TableRow>
                   <TableHead>Vehicle</TableHead>
                   <TableHead>Customer</TableHead>
@@ -423,6 +423,7 @@ export function AdminVehiclesPage() {
                         <Button
                           variant="ghost"
                           size="icon-sm"
+                          className="rounded-lg hover:bg-accent"
                           aria-label="View photos"
                           onClick={() => void openPhotos(vehicle)}
                         >
@@ -431,6 +432,7 @@ export function AdminVehiclesPage() {
                         <Button
                           variant="ghost"
                           size="icon-sm"
+                          className="rounded-lg hover:bg-accent"
                           aria-label="Edit vehicle"
                           onClick={() => openEdit(vehicle)}
                         >
@@ -584,12 +586,12 @@ export function AdminVehiclesPage() {
             </p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
-              {photoUrls.map((url) => (
+              {photoUrls.map((url, index) => (
                 <img
                   key={url}
                   src={url}
-                  alt=""
-                  className="w-full rounded-md border object-cover"
+                  alt={`${photoVehicle ? vehicleTitle(photoVehicle) : 'Vehicle'} — photo ${index + 1} of ${photoUrls.length}`}
+                  className="border-border/60 shadow-soft w-full rounded-xl border object-cover"
                   loading="lazy"
                 />
               ))}

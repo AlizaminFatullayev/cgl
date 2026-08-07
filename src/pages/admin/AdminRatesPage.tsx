@@ -178,8 +178,8 @@ export function AdminRatesPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Shipping rates</h1>
-        <Button onClick={() => setAdding(true)}>
+        <h1 className="text-3xl font-bold tracking-tight">Shipping rates</h1>
+        <Button className="shadow-soft rounded-full px-6" onClick={() => setAdding(true)}>
           <Plus className="size-4" />
           Add branch
         </Button>
@@ -213,9 +213,9 @@ export function AdminRatesPage() {
             {filtered.length} of {rates.length} rows
           </p>
 
-          <div className="overflow-x-auto rounded-lg border">
+          <div className="overflow-x-auto rounded-2xl border border-border/60 bg-card shadow-soft">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-secondary/50">
                 <TableRow>
                   <TableHead>State</TableHead>
                   <TableHead>Code</TableHead>
@@ -267,7 +267,8 @@ export function AdminRatesPage() {
                             <Button
                               variant="ghost"
                               size="icon-sm"
-                              aria-label="Save rate"
+                              className="rounded-lg hover:bg-accent"
+                          aria-label="Save rate"
                               onClick={() => void saveEdit(rate)}
                             >
                               <Check className="size-4" />
@@ -275,7 +276,8 @@ export function AdminRatesPage() {
                             <Button
                               variant="ghost"
                               size="icon-sm"
-                              aria-label="Cancel"
+                              className="rounded-lg hover:bg-accent"
+                          aria-label="Cancel"
                               onClick={() => setEditingId(null)}
                             >
                               <X className="size-4" />
@@ -286,14 +288,16 @@ export function AdminRatesPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => startEdit(rate)}
+                              className="rounded-full px-4"
+                        onClick={() => startEdit(rate)}
                             >
                               Edit
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon-sm"
-                              aria-label={`Delete ${displayText(rate.branch)}`}
+                              className="rounded-lg hover:bg-accent"
+                          aria-label={`Delete ${displayText(rate.branch)}`}
                               onClick={() => void removeRate(rate)}
                             >
                               <Trash2 className="size-4" />
@@ -381,10 +385,10 @@ export function AdminRatesPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setAdding(false)}>
+            <Button variant="ghost" className="rounded-full px-5" onClick={() => setAdding(false)}>
               Cancel
             </Button>
-            <Button onClick={() => void addRate()} disabled={addSaving}>
+            <Button className="shadow-soft rounded-full px-6" onClick={() => void addRate()} disabled={addSaving}>
               {addSaving && <Loader2 className="size-4 animate-spin" />}
               Add branch
             </Button>

@@ -1,50 +1,40 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-
-// TODO(content): every string on this page is placeholder copy. Replace with
-// the real company blurb, founding year, and figures before launch.
-const FACTS = [
-  { label: 'Operating since', value: 'TODO(content)' },
-  { label: 'Vehicles shipped', value: 'TODO(content)' },
-  { label: 'Destination ports', value: 'TODO(content)' },
-]
+import { Section, SectionHeading } from '@/components/Section'
 
 export function AboutPage() {
   return (
-    <div className="space-y-10">
-      <header className="space-y-3">
-        <h1 className="text-3xl font-semibold tracking-tight">About us</h1>
-        <p className="text-muted-foreground max-w-2xl">
-          {/* TODO(content): real company blurb. */}
-          We are a car-import logistics company moving vehicles from US
-          auctions to overseas buyers. This paragraph is placeholder copy and
-          needs to be replaced with the real company description.
-        </p>
-      </header>
+    <Section>
+      <div className="mx-auto max-w-4xl">
+        <SectionHeading
+          eyebrow="ABOUT"
+          title="Moving cars across oceans, one VIN at a time"
+        />
 
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold tracking-tight">What we do</h2>
-        <p className="text-muted-foreground max-w-2xl">
-          {/* TODO(content): real narrative. */}
-          Placeholder: describe the inland transport network, the port
-          relationships, and how shipments are tracked from auction to
-          delivery.
-        </p>
-      </section>
+        <div className="mt-8 space-y-6">
+          <p className="text-lg leading-relaxed">
+            Caspian Global Logistics (CGL) is an officially registered LLC
+            logistics company built on years of experience in vehicle import and
+            strong international partnerships. Our goal is to provide our
+            clients with tr…
+          </p>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        {FACTS.map((fact) => (
-          <Card key={fact.label}>
-            <CardHeader>
-              <CardTitle className="text-muted-foreground text-sm font-medium">
-                {fact.label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-semibold">
-              {fact.value}
-            </CardContent>
-          </Card>
-        ))}
+          {/*
+            TODO(content): the source page was truncated mid-sentence at
+            "provide our clients with tr…" and the rest was never captured.
+            The client needs to supply the remaining About copy; drop it in
+            below and delete this placeholder block.
+          */}
+          <div className="border-border bg-gradient-subtle text-muted-foreground rounded-2xl border border-dashed p-6 text-sm">
+            <p className="text-foreground font-semibold">
+              TODO(content): remaining About copy
+            </p>
+            <p className="mt-2">
+              The original page was captured only as far as “…provide our
+              clients with tr…”. Everything after that sentence is still
+              outstanding from the client.
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
+    </Section>
   )
 }

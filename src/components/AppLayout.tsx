@@ -22,19 +22,24 @@ export function AppLayout() {
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
-      'rounded-md px-3 py-2 text-sm font-medium transition-colors',
+      'transition-smooth rounded-full px-4 py-2 text-sm font-medium',
       isActive
-        ? 'bg-secondary text-secondary-foreground'
-        : 'text-muted-foreground hover:text-foreground',
+        ? 'bg-accent text-accent-foreground'
+        : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
     )
 
   return (
     <div className="min-h-svh">
-      <header className="border-b">
-        <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-4 py-3">
+      <header className="border-border/60 bg-background/80 sticky top-0 z-50 w-full border-b backdrop-blur-xl">
+        <nav className="mx-auto flex max-w-6xl flex-wrap items-center gap-1 px-4 py-3">
           {/* Links back to the public site, which now owns "/". */}
-          <Link to="/" className="mr-4 flex items-center gap-2 font-semibold">
-            <Ship className="size-5" />
+          <Link
+            to="/"
+            className="text-foreground mr-4 flex items-center gap-2 text-base font-bold tracking-tight"
+          >
+            <span className="bg-gradient-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg">
+              <Ship className="size-4" />
+            </span>
             CGL
           </Link>
 
@@ -57,7 +62,12 @@ export function AppLayout() {
                 {profile.full_name}
               </span>
             )}
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full px-4"
+              onClick={handleSignOut}
+            >
               <LogOut className="size-4" />
               Sign out
             </Button>
@@ -65,7 +75,7 @@ export function AppLayout() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8">
+      <main className="mx-auto max-w-6xl px-4 py-10">
         <Outlet />
       </main>
     </div>
