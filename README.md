@@ -244,3 +244,13 @@ register screens.
 **Deliberately not built yet:** Home / About / Services / Contact, the
 calculator UI, dashboard internals, vehicle forms, admin panel screens, and the
 catalog.
+
+
+
+## Promoting the first admin
+The role guard blocks all role changes for non-admins, including from the
+SQL editor (auth.uid() is null there). To bootstrap the single admin:
+  alter table public.profiles disable trigger user;
+  update public.profiles set role='admin' where id = (...);
+  alter table public.profiles enable trigger user;
+Always re-enable the trigger in the same statement block.

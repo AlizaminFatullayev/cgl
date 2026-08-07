@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
-    "verify:phase0": "node scripts/verify-phase0.mjs"
+    "verify:phase0": "node scripts/verify-phase0.mjs",
+    "verify:admin": "node scripts/verify-admin.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

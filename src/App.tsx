@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from '@/auth/AuthProvider'
+import { AdminLayout } from '@/components/AdminLayout'
 import { AppLayout } from '@/components/AppLayout'
 import { PublicLayout } from '@/components/PublicLayout'
 import { RequireAdmin } from '@/components/RequireAdmin'
@@ -16,6 +17,12 @@ import { CalculatorPage } from '@/pages/public/CalculatorPage'
 import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 import { VehiclesPage } from '@/pages/dashboard/VehiclesPage'
 import { AddVehiclePage } from '@/pages/dashboard/AddVehiclePage'
+import { AdminOverviewPage } from '@/pages/admin/AdminOverviewPage'
+import { AdminVehiclesPage } from '@/pages/admin/AdminVehiclesPage'
+import { AdminCustomersPage } from '@/pages/admin/AdminCustomersPage'
+import { AdminRatesPage } from '@/pages/admin/AdminRatesPage'
+import { AdminInvoicesPage } from '@/pages/admin/AdminInvoicesPage'
+import { AdminMessagesPage } from '@/pages/admin/AdminMessagesPage'
 
 export default function App() {
   return (
@@ -54,10 +61,14 @@ export default function App() {
 
               {/* Admin-only area, nested inside the signed-in gate */}
               <Route element={<RequireAdmin />}>
-                <Route
-                  path="/admin"
-                  element={<PlaceholderPage name="Admin" />}
-                />
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<AdminOverviewPage />} />
+                  <Route path="vehicles" element={<AdminVehiclesPage />} />
+                  <Route path="customers" element={<AdminCustomersPage />} />
+                  <Route path="rates" element={<AdminRatesPage />} />
+                  <Route path="invoices" element={<AdminInvoicesPage />} />
+                  <Route path="messages" element={<AdminMessagesPage />} />
+                </Route>
               </Route>
             </Route>
           </Route>

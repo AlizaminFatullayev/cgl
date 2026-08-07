@@ -67,6 +67,8 @@ export interface Transaction {
   user_id: string | null
   amount: number | null
   type: string
+  /** Added in 0010_adjust_balance.sql. */
+  note: string | null
   created_at: string
 }
 
@@ -85,5 +87,31 @@ export interface ContactMessage {
   email: string
   vin: string | null
   message: string
+  is_read: boolean
   created_at: string
+}
+
+/** Row shape returned by the admin_overview_stats() RPC (0011). */
+export interface AdminOverviewStats {
+  customers: number
+  vehicles_total: number
+  at_auction: number
+  in_transit: number
+  at_port: number
+  on_ocean: number
+  delivered: number
+  unread_messages: number
+  /** numeric comes back as a string from PostgREST; format, never compute. */
+  outstanding: string | number
+}
+
+/** Row shape returned by the admin_list_customers() RPC (0011). */
+export interface AdminCustomer {
+  id: string
+  full_name: string | null
+  email: string | null
+  balance: number | string
+  role: UserRole
+  created_at: string
+  vehicle_count: number
 }
