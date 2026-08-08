@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, Loader2, Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -9,6 +10,7 @@ import { VehicleCard, type VehicleWithPhotos } from '@/components/VehicleCard'
 import { cn } from '@/lib/utils'
 
 export function VehiclesPage() {
+  const { t } = useTranslation(['vehicles', 'dashboard'])
   const { session } = useAuth()
   const userId = session?.user.id ?? null
 
@@ -81,20 +83,20 @@ export function VehiclesPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl font-bold tracking-tight">My vehicles</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t('myVehicles')}</h1>
         <Link
           to="/vehicles/new"
           className={cn(buttonVariants(), 'shadow-soft rounded-full px-6')}
         >
           <Plus className="size-4" />
-          Add vehicle
+          {t('addVehicle', { ns: 'dashboard' })}
         </Link>
       </div>
 
       {loading && (
         <div className="flex items-center gap-2 py-10">
           <Loader2 className="text-muted-foreground size-5 animate-spin" />
-          <span className="text-muted-foreground">Loading your vehicles…</span>
+          <span className="text-muted-foreground">{t('loadingVehicles')}</span>
         </div>
       )}
 
@@ -104,15 +106,13 @@ export function VehiclesPage() {
           className="border-destructive/40 bg-destructive/5 text-destructive flex items-start gap-2 rounded-lg border p-4 text-sm"
         >
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-          <span>Could not load your vehicles: {error}</span>
+          <span>{t('loadError', { error })}</span>
         </div>
       )}
 
       {!loading && !error && vehicles.length === 0 && (
         <div className="bg-gradient-subtle border-border/60 flex flex-col items-center gap-4 rounded-3xl border border-dashed p-12 text-center">
-          <p className="text-muted-foreground">
-            You have not added a vehicle yet.
-          </p>
+          <p className="text-muted-foreground">{t('emptyTitle')}</p>
           <Link
             to="/vehicles/new"
             className={cn(
@@ -120,7 +120,7 @@ export function VehiclesPage() {
               'bg-card rounded-full px-6',
             )}
           >
-            Add your first vehicle
+            {t('emptyCta')}
           </Link>
         </div>
       )}

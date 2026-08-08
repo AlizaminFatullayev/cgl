@@ -63,14 +63,23 @@ export function Section({
 export function SectionHeading({
   eyebrow,
   title,
+  titleTail,
   subtitle,
   centered = false,
+  className,
   id,
 }: {
   eyebrow: string
   title: string
+  /**
+   * Optional tail rendered in --primary after `title`, which stays in
+   * --foreground. This two-tone heading is the original site's style.
+   * `title` should carry its own trailing space when a tail is supplied.
+   */
+  titleTail?: string
   subtitle?: string
   centered?: boolean
+  className?: string
   id?: string
 }) {
   return (
@@ -78,6 +87,7 @@ export function SectionHeading({
       className={cn(
         'max-w-2xl space-y-3',
         centered && 'mx-auto text-center',
+        className,
       )}
     >
       <Eyebrow>{eyebrow}</Eyebrow>
@@ -86,6 +96,7 @@ export function SectionHeading({
         className="text-3xl font-bold tracking-tight text-balance sm:text-4xl"
       >
         {title}
+        {titleTail && <span className="text-primary">{titleTail}</span>}
       </h2>
       {subtitle && (
         <p className="text-muted-foreground text-lg">{subtitle}</p>

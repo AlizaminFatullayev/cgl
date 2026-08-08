@@ -1,26 +1,32 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { Ship } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/auth/use-auth'
+import { HeaderLogo } from '@/components/Logo'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { buttonVariants } from '@/components/ui/button'
 import { SiteFooter } from '@/components/SiteFooter'
 import { cn } from '@/lib/utils'
 
+/** `key` indexes into the nav namespace; the label itself is translated. */
 const NAV_ITEMS = [
-  { to: '/', label: 'Home', end: true },
-  { to: '/services', label: 'Services', end: false },
-  { to: '/calculator', label: 'Calculator', end: false },
-  { to: '/tracking', label: 'Tracking', end: false },
-  { to: '/about', label: 'About', end: false },
-  { to: '/contact', label: 'Contact', end: false },
-]
+  { to: '/', key: 'home', end: true },
+  { to: '/services', key: 'services', end: false },
+  { to: '/calculator', key: 'calculator', end: false },
+  { to: '/tracking', key: 'tracking', end: false },
+  { to: '/about', key: 'about', end: false },
+  { to: '/contact', key: 'contact', end: false },
+] as const
 
 export function PublicLayout() {
   const { session } = useAuth()
+  const { t } = useTranslation(['nav', 'common'])
 
   // Pills: the original's nav chips -- rounded-full, subtle tint when active.
+  // Padding tightens below xl because Azerbaijani and Russian labels are
+  // noticeably longer than English and would otherwise force a second row.
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
-      'transition-smooth rounded-full px-4 py-2 text-sm font-medium',
+      'transition-smooth rounded-full px-3 py-2 text-sm font-medium whitespace-nowrap xl:px-4',
       isActive
         ? 'bg-accent text-accent-foreground'
         : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
@@ -30,14 +36,8 @@ export function PublicLayout() {
     <div className="flex min-h-svh flex-col">
       <header className="border-border/60 bg-background/80 sticky top-0 z-50 w-full border-b backdrop-blur-xl">
         <nav className="container mx-auto flex flex-wrap items-center gap-1 px-4 py-3 sm:px-6">
-          <Link
-            to="/"
-            className="text-foreground mr-4 flex items-center gap-2 text-base font-bold tracking-tight"
-          >
-            <span className="bg-gradient-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg">
-              <Ship className="size-4" />
-            </span>
-            CGL
+          <Link to="/" className="mr-4 flex items-center">
+            <HeaderLogo />
           </Link>
 
           {NAV_ITEMS.map((item) => (
@@ -47,17 +47,21 @@ export function PublicLayout() {
               end={item.end}
               className={linkClass}
             >
-              {item.label}
+              {t(`nav:${item.key}`)}
             </NavLink>
           ))}
 
           <div className="ml-auto flex items-center gap-2">
+            <LanguageSwitcher />
             {session ? (
               <Link
                 to="/dashboard"
-                className={cn(buttonVariants({ size: 'sm' }), 'rounded-full px-4')}
+                className={cn(
+                  buttonVariants({ size: 'sm' }),
+                  'rounded-full px-4 whitespace-nowrap',
+                )}
               >
-                Dashboard
+                {t('common:dashboard')}
               </Link>
             ) : (
               <>
@@ -65,19 +69,19 @@ export function PublicLayout() {
                   to="/login"
                   className={cn(
                     buttonVariants({ variant: 'ghost', size: 'sm' }),
-                    'rounded-full px-4',
+                    'rounded-full px-3 whitespace-nowrap',
                   )}
                 >
-                  Sign in
+                  {t('common:signIn')}
                 </Link>
                 <Link
                   to="/register"
                   className={cn(
                     buttonVariants({ size: 'sm' }),
-                    'shadow-soft rounded-full px-4',
+                    'shadow-soft rounded-full px-3 whitespace-nowrap',
                   )}
                 >
-                  Register
+                  {t('common:register')}
                 </Link>
               </>
             )}

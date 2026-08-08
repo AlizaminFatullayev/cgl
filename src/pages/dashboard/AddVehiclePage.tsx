@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -42,14 +43,11 @@ const vehicleSchema = z.object({
     .trim()
     .refine(
       (v) => v === '' || (/^\d{4}$/.test(v) && Number(v) >= 1900 && Number(v) <= 2100),
-      'Enter a 4-digit year between 1900 and 2100',
+      'vYear',
     ),
   make: optionalText(80),
   model: optionalText(80),
-  vin: z
-    .string()
-    .trim()
-    .refine((v) => v === '' || v.length <= 17, 'A VIN is at most 17 characters'),
+  vin: z.string().trim().refine((v) => v === '' || v.length <= 17, 'vVin'),
   lot_number: optionalText(50),
   container_number: optionalText(50),
   booking_number: optionalText(50),
@@ -60,7 +58,7 @@ const vehicleSchema = z.object({
     .trim()
     .refine(
       (v) => v === '' || (!Number.isNaN(Number(v)) && Number(v) >= 0),
-      'Enter a non-negative amount',
+      'vAmount',
     ),
   notes: optionalText(2000),
 })
@@ -74,6 +72,7 @@ function nullIfBlank(value: string | undefined): string | null {
 }
 
 export function AddVehiclePage() {
+  const { t } = useTranslation(['vehicles', 'common'])
   const { session } = useAuth()
   const navigate = useNavigate()
   const userId = session?.user.id ?? null
@@ -126,7 +125,7 @@ export function AddVehiclePage() {
     setPhotoWarning(null)
 
     if (!userId) {
-      setFormError('Your session expired. Please sign in again.')
+      setFormError(t('errSession'))
       return
     }
 
@@ -151,7 +150,7 @@ export function AddVehiclePage() {
       .maybeSingle<Vehicle>()
 
     if (insertError) {
-      setFormError(`Could not save the vehicle: ${insertError.message}`)
+      setFormError(t('errSave', { error: insertError.message }))
       return
     }
 
@@ -159,10 +158,7 @@ export function AddVehiclePage() {
     // no row. Treating that as success would strand the user on a vehicle
     // that does not exist.
     if (!inserted) {
-      setFormError(
-        'The vehicle was not saved. Your account may not have permission to ' +
-          'add vehicles — please contact support.',
-      )
+      setFormError(t('errNotSaved'))
       return
     }
 
@@ -201,9 +197,7 @@ export function AddVehiclePage() {
 
       if (failures.length > 0) {
         // The vehicle itself is saved, so this is a warning, not a failure.
-        setPhotoWarning(
-          `The vehicle was saved, but some photos did not attach: ${failures.join('; ')}`,
-        )
+        setPhotoWarning(t('warnPhotos', { errors: failures.join('; ') }))
         return
       }
     }
@@ -225,54 +219,51 @@ export function AddVehiclePage() {
         {...register(name)}
       />
       {errors[name] && (
-        <p className="text-destructive text-sm">{errors[name]?.message}</p>
+        <p className="text-destructive text-sm">{t(errors[name]?.message ?? '')}</p>
       )}
     </div>
   )
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Add a vehicle</h1>
+      <h1 className="text-3xl font-bold tracking-tight">{t('addTitle')}</h1>
 
       <Card className="border-border/60 shadow-soft max-w-3xl">
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <CardHeader>
-            <CardTitle>Vehicle details</CardTitle>
-            <CardDescription>
-              New vehicles start at status “At Auction”. Only our staff can move
-              a vehicle to the next status.
-            </CardDescription>
+            <CardTitle>{t('detailsTitle')}</CardTitle>
+            <CardDescription>{t('detailsSubtitle')}</CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-5">
             <div className="grid gap-4 sm:grid-cols-3">
-              {textField('year', 'Year', '2021')}
-              {textField('make', 'Make', 'Toyota')}
-              {textField('model', 'Model', 'Camry')}
+              {textField('year', t('year'), '2021')}
+              {textField('make', t('make'), 'Toyota')}
+              {textField('model', t('model'), 'Camry')}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              {textField('vin', 'VIN', '1HGCM82633A004352')}
-              {textField('lot_number', 'Lot number')}
-              {textField('container_number', 'Container number')}
-              {textField('booking_number', 'Booking number')}
-              {textField('receiver', 'Receiver')}
-              {textField('shipping_line', 'Shipping line')}
-              {textField('total_amount', 'Total amount (USD)', '0.00')}
+              {textField('vin', t('vin'), '1HGCM82633A004352')}
+              {textField('lot_number', t('lotNumber'))}
+              {textField('container_number', t('containerNumber'))}
+              {textField('booking_number', t('bookingNumber'))}
+              {textField('receiver', t('receiver'))}
+              {textField('shipping_line', t('shippingLine'))}
+              {textField('total_amount', t('totalAmount'), '0.00')}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t('notes')}</Label>
               <Textarea id="notes" rows={4} {...register('notes')} />
               {errors.notes && (
                 <p className="text-destructive text-sm">
-                  {errors.notes.message}
+                  {t(errors.notes.message ?? '')}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="photos">Photos</Label>
+              <Label htmlFor="photos">{t('photos')}</Label>
               <Input
                 id="photos"
                 type="file"
@@ -281,7 +272,7 @@ export function AddVehiclePage() {
                 onChange={handleFileChange}
               />
               <p className="text-muted-foreground text-sm">
-                JPEG, PNG, WebP or AVIF. Up to 10 MB each.
+                {t('photoHint')}
               </p>
               {fileError && (
                 <p className="text-destructive text-sm">{fileError}</p>
@@ -299,7 +290,7 @@ export function AddVehiclePage() {
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => removeFile(index)}
-                        aria-label={`Remove ${file.name}`}
+                        aria-label={t('removeFile', { name: file.name })}
                       >
                         <X className="size-4" />
                       </Button>
@@ -333,7 +324,7 @@ export function AddVehiclePage() {
                     size="sm"
                     onClick={() => navigate('/vehicles', { replace: true })}
                   >
-                    Go to my vehicles
+                    {t('goToMyVehicles')}
                   </Button>
                 </div>
               </div>
@@ -347,7 +338,7 @@ export function AddVehiclePage() {
               disabled={isSubmitting}
             >
               {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-              Save vehicle
+              {t('saveVehicle')}
             </Button>
             <Button
               type="button"
@@ -355,7 +346,7 @@ export function AddVehiclePage() {
               className="rounded-full px-5"
               onClick={() => navigate('/vehicles')}
             >
-              Cancel
+              {t('common:cancel')}
             </Button>
           </CardFooter>
         </form>

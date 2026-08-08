@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ImageOff } from 'lucide-react'
 import type { Vehicle } from '@/types/database'
 import { displayText, formatCurrency, formatDate, vehicleTitle } from '@/lib/format'
@@ -25,6 +26,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 export function VehicleCard({ vehicle }: { vehicle: VehicleWithPhotos }) {
+  const { t } = useTranslation('vehicles')
   const [thumbnail, setThumbnail] = useState<string | null>(null)
   const firstPhoto = vehicle.photoPaths[0] ?? null
 
@@ -68,27 +70,27 @@ export function VehicleCard({ vehicle }: { vehicle: VehicleWithPhotos }) {
         </div>
 
         <dl className="text-sm">
-          <DetailRow label="VIN" value={displayText(vehicle.vin)} />
-          <DetailRow label="Lot" value={displayText(vehicle.lot_number)} />
+          <DetailRow label={t('vin')} value={displayText(vehicle.vin)} />
+          <DetailRow label={t('lot')} value={displayText(vehicle.lot_number)} />
           <DetailRow
-            label="Container"
+            label={t('container')}
             value={displayText(vehicle.container_number)}
           />
           <DetailRow
-            label="Booking"
+            label={t('booking')}
             value={displayText(vehicle.booking_number)}
           />
-          <DetailRow label="Receiver" value={displayText(vehicle.receiver)} />
+          <DetailRow label={t('receiver')} value={displayText(vehicle.receiver)} />
           <DetailRow
-            label="Shipping line"
+            label={t('shippingLine')}
             value={displayText(vehicle.shipping_line)}
           />
           <DetailRow
-            label="Total"
+            label={t('total')}
             value={formatCurrency(vehicle.total_amount)}
           />
-          <DetailRow label="Paid" value={formatCurrency(vehicle.paid)} />
-          <DetailRow label="Added" value={formatDate(vehicle.created_at)} />
+          <DetailRow label={t('paid')} value={formatCurrency(vehicle.paid)} />
+          <DetailRow label={t('added')} value={formatDate(vehicle.created_at)} />
         </dl>
 
         {vehicle.notes?.trim() && (

@@ -1,7 +1,14 @@
+import i18n from '@/i18n'
+import { currentIntlLocale } from '@/i18n/use-locale'
+
 /**
  * Display helpers. Every column on vehicles/profiles is nullable, so raw
  * interpolation would put "null" or "undefined" on screen. These always
  * return a printable string.
+ *
+ * Dates and numbers follow the active locale. Currency is ALWAYS USD -- the
+ * locale changes how an amount is written, never what it is worth. No
+ * conversion happens anywhere.
  */
 
 const EM_DASH = '—'
@@ -35,8 +42,9 @@ export function formatCurrency(
   if (value === null || value === undefined || value === '') return fallback
   const numeric = typeof value === 'string' ? Number(value) : value
   if (Number.isNaN(numeric)) return fallback
-  return numeric.toLocaleString('en-US', {
+  return numeric.toLocaleString(currentIntlLocale(), {
     style: 'currency',
+    // USD everywhere -- formatting only, never conversion.
     currency: 'USD',
     maximumFractionDigits: 2,
   })
@@ -50,7 +58,7 @@ export function formatDate(
   if (!value) return fallback
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return fallback
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(currentIntlLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -70,5 +78,7 @@ export function vehicleTitle(vehicle: {
   ].filter((part): part is string => {
     return part !== null && part.trim() !== ''
   })
-  return parts.length > 0 ? parts.join(' ') : 'Untitled vehicle'
+  // Year/make/model are user data and are never translated; only the
+  // fallback label for a vehicle with none of them is localised.
+  return parts.length > 0 ? parts.join(' ') : i18n.t('vehicles:untitled')
 }

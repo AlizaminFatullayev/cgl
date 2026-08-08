@@ -1,20 +1,23 @@
+import { useTranslation } from 'react-i18next'
 import { Phone } from 'lucide-react'
 import { ContactForm } from '@/components/ContactForm'
 import { Section, SectionHeading } from '@/components/Section'
 import { PHONE_NUMBERS } from '@/components/SiteFooter'
 
 export function ContactPage() {
+  const { t } = useTranslation('home')
+
   return (
     <Section>
       <SectionHeading
-        eyebrow="CONTACT"
-        title="Get a quote in minutes"
-        subtitle="Tell us about your shipment. Our team replies within one business hour."
+        eyebrow={t('contactEyebrow')}
+        title={t('contactTitle')}
+        subtitle={t('contactSubtitle')}
       />
 
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
         <div>
-          <h3 className="text-lg font-semibold tracking-tight">Call us</h3>
+          <h3 className="text-lg font-semibold tracking-tight">{t('callUs')}</h3>
           <ul className="mt-4 space-y-3">
             {PHONE_NUMBERS.map((phone) => (
               <li key={phone}>

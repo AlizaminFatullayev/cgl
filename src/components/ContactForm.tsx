@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -22,21 +23,22 @@ import {
  * section and /contact share one implementation. The schema and the submit
  * handler are carried over unchanged.
  */
+/**
+ * Validation RULES are unchanged -- only the MESSAGES are translated. Each
+ * message is a translation key resolved at render time, so switching language
+ * re-labels existing errors without re-running validation.
+ */
 const contactSchema = z.object({
-  name: z.string().trim().min(2, 'Enter your name'),
-  email: z.email('Enter a valid email address'),
-  vin: z
-    .string()
-    .trim()
-    .max(17, 'A VIN is at most 17 characters')
-    .optional()
-    .or(z.literal('')),
-  message: z.string().trim().min(10, 'Tell us a bit more (10+ characters)'),
+  name: z.string().trim().min(2, 'vNameMin'),
+  email: z.email('vEmail'),
+  vin: z.string().trim().max(17, 'vVinMax').optional().or(z.literal('')),
+  message: z.string().trim().min(10, 'vMessageMin'),
 })
 
 type ContactValues = z.infer<typeof contactSchema>
 
 export function ContactForm({ idPrefix = 'contact' }: { idPrefix?: string }) {
+  const { t } = useTranslation(['contact', 'common'])
   const [formError, setFormError] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
 
@@ -66,9 +68,7 @@ export function ContactForm({ idPrefix = 'contact' }: { idPrefix?: string }) {
     })
 
     if (error) {
-      setFormError(
-        `We could not send your message: ${error.message}. Please try again.`,
-      )
+      setFormError(t('errorPrefix', { error: error.message }))
       return
     }
 
@@ -86,9 +86,9 @@ export function ContactForm({ idPrefix = 'contact' }: { idPrefix?: string }) {
           <span className="bg-success-soft text-success-strong mb-1 flex size-10 items-center justify-center rounded-xl">
             <CheckCircle2 className="size-5" />
           </span>
-          <CardTitle>Message sent</CardTitle>
+          <CardTitle>{t('sentTitle')}</CardTitle>
           <CardDescription>
-            Thanks — we have your message and will get back to you by email.
+            {t('sentBody')}
           </CardDescription>
         </CardHeader>
         <CardFooter>
@@ -97,7 +97,7 @@ export function ContactForm({ idPrefix = 'contact' }: { idPrefix?: string }) {
             className="rounded-full px-5"
             onClick={() => setSent(false)}
           >
-            Send another message
+            {t('sendAnother')}
           </Button>
         </CardFooter>
       </Card>
@@ -109,7 +109,7 @@ export function ContactForm({ idPrefix = 'contact' }: { idPrefix?: string }) {
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor={fieldId('name')}>Name</Label>
+            <Label htmlFor={fieldId('name')}>{t('name')}</Label>
             <Input
               id={fieldId('name')}
               autoComplete="name"
@@ -117,12 +117,12 @@ export function ContactForm({ idPrefix = 'contact' }: { idPrefix?: string }) {
               {...register('name')}
             />
             {errors.name && (
-              <p className="text-destructive text-sm">{errors.name.message}</p>
+              <p className="text-destructive text-sm">{t(errors.name.message ?? '')}</p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={fieldId('email')}>Email</Label>
+            <Label htmlFor={fieldId('email')}>{t('email')}</Label>
             <Input
               id={fieldId('email')}
               type="email"
@@ -132,13 +132,16 @@ export function ContactForm({ idPrefix = 'contact' }: { idPrefix?: string }) {
               {...register('email')}
             />
             {errors.email && (
-              <p className="text-destructive text-sm">{errors.email.message}</p>
+              <p className="text-destructive text-sm">{t(errors.email.message ?? '')}</p>
             )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor={fieldId('vin')}>
-              VIN <span className="text-muted-foreground">(optional)</span>
+              {t('vin')}{' '}
+              <span className="text-muted-foreground">
+                ({t('common:optional')})
+              </span>
             </Label>
             <Input
               id={fieldId('vin')}
@@ -147,12 +150,12 @@ export function ContactForm({ idPrefix = 'contact' }: { idPrefix?: string }) {
               {...register('vin')}
             />
             {errors.vin && (
-              <p className="text-destructive text-sm">{errors.vin.message}</p>
+              <p className="text-destructive text-sm">{t(errors.vin.message ?? '')}</p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={fieldId('message')}>Message</Label>
+            <Label htmlFor={fieldId('message')}>{t('message')}</Label>
             <Textarea
               id={fieldId('message')}
               rows={5}
@@ -161,7 +164,7 @@ export function ContactForm({ idPrefix = 'contact' }: { idPrefix?: string }) {
             />
             {errors.message && (
               <p className="text-destructive text-sm">
-                {errors.message.message}
+                {t(errors.message.message ?? '')}
               </p>
             )}
           </div>
@@ -180,7 +183,7 @@ export function ContactForm({ idPrefix = 'contact' }: { idPrefix?: string }) {
             disabled={isSubmitting}
           >
             {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-            Send Message
+            {t('send')}
           </Button>
         </CardFooter>
       </form>

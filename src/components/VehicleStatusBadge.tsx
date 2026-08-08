@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge'
+import { statusLabel } from '@/i18n/labels'
 import { cn } from '@/lib/utils'
 import type { VehicleStatus } from '@/types/database'
 
@@ -36,7 +37,11 @@ export function VehicleStatusBadge({ status }: { status: string | null }) {
         className ?? 'bg-muted text-muted-foreground border-border',
       )}
     >
-      {status ?? 'Unknown'}
+      {/*
+        `status` stays the stored English value; statusLabel only changes how
+        it is displayed. Never write a translated status back to the database.
+      */}
+      {statusLabel(status)}
     </Badge>
   )
 }

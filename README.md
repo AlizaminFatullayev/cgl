@@ -254,3 +254,99 @@ SQL editor (auth.uid() is null there). To bootstrap the single admin:
   update public.profiles set role='admin' where id = (...);
   alter table public.profiles enable trigger user;
 Always re-enable the trigger in the same statement block.
+
+---
+
+## 8. Deployment (GitHub → Vercel)
+
+A checklist you can hand to someone else. **The order matters** — the
+"if you skip ahead" notes say what breaks.
+
+### Before you start
+
+- The app is a pure client-side SPA. There is no server, no API route and no
+  SSR; Vercel only serves static files plus the SPA rewrite in `vercel.json`.
+- `VITE_*` variables are **inlined into the JS bundle at build time**, not read
+  at runtime. That single fact causes most of the ordering traps below.
+
+### 1. Push to GitHub and import into Vercel
+
+1. Create an empty repository on GitHub (no README, no .gitignore — the repo
+   already has both).
+2. Add it as a remote and push `main`.
+3. In Vercel: **Add New → Project → Import** the repository.
+4. Framework preset: **Vite**. Leave the defaults — they already match:
+   - Build command: `npm run build`
+   - Output directory: `dist`
+   - Install command: `npm install`
+5. Do **not** deploy yet if Vercel offers to; set the env vars first (step 2).
+   If you do deploy now, the build succeeds but the app throws
+   "Missing Supabase environment variables" on load.
+
+`vercel.json` is committed and is picked up automatically — it supplies the SPA
+rewrite, the security headers and the asset caching rules.
+
+### 2. Set the environment variables, then redeploy
+
+In **Project → Settings → Environment Variables**, add both, ticking
+**Production, Preview and Development** for each:
+
+| Name | Value |
+| --- | --- |
+| `VITE_SUPABASE_URL` | your project URL |
+| `VITE_SUPABASE_ANON_KEY` | the `anon` / publishable key |
+
+The anon key is public by design — it ships in the bundle and is meant to. RLS
+is what protects the data. Never add the `service_role` key here.
+
+Then **Deployments → ⋯ → Redeploy** on the latest deployment.
+
+> **If you skip the redeploy:** any deployment built before the variables
+> existed has the old (empty) values baked in. Adding variables does not
+> retro-fix an existing build. This is the single most common mistake.
+
+### 3. Point Supabase at the Vercel URL
+
+In **Supabase → Authentication → URL Configuration**:
+
+- **Site URL**: your production URL, e.g. `https://your-app.vercel.app`
+- **Redirect URLs**: add the production URL, and
+  `https://*-your-team.vercel.app/**` if you want preview deployments to be
+  able to sign in too.
+
+> **If you skip this:** sign-in and email confirmation links fail — Supabase
+> refuses to redirect back to an unlisted origin.
+
+### 4. Run the verification scripts, THEN re-enable email confirmation
+
+Both scripts sign up throwaway users and need signup to return a session
+immediately, which only happens while **Confirm email** is off.
+
+1. With confirmation still **off**, run against the production project:
+   ```bash
+   npm run verify:phase0
+   npm run verify:admin
+   ```
+2. Delete the throwaway users each script prints at the end.
+3. Only then, in **Supabase → Authentication → Providers → Email**, turn
+   **Confirm email** back **on** for launch.
+
+> **If you flip confirmation on first:** both scripts stop after
+> "Signup returned no session" and cannot verify anything. Turn it back off,
+> run them, and turn it on again.
+
+### 5. Promote the single admin
+
+Register the account through `/register` on the deployed site, then follow
+**"Promoting the first admin"** above — the trigger has to be disabled and
+re-enabled in the same statement block. There is intentionally no UI for this
+and there should only ever be one admin.
+
+### Follow-ups, deliberately not done here
+
+- **Content-Security-Policy** is *not* set. A wrong CSP silently breaks the
+  Supabase REST/auth calls and the signed storage image URLs, so it needs to be
+  written against the real deployed origins and tested on a preview deployment
+  first.
+- **Public VIN tracking** still requires a policy decision (see the tracking
+  notes) — signed-out visitors currently get no results by design.

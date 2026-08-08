@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { AuthProvider } from '@/auth/AuthProvider'
 import { AdminLayout } from '@/components/AdminLayout'
 import { AppLayout } from '@/components/AppLayout'
@@ -26,6 +27,13 @@ import { AdminInvoicesPage } from '@/pages/admin/AdminInvoicesPage'
 import { AdminMessagesPage } from '@/pages/admin/AdminMessagesPage'
 
 export default function App() {
+  /*
+    Subscribes the whole tree to language changes. Helpers like statusLabel()
+    and formatCurrency() read the active locale outside React, so without this
+    a switch would leave already-rendered labels stale.
+  */
+  useTranslation()
+
   return (
     <BrowserRouter>
       <AuthProvider>

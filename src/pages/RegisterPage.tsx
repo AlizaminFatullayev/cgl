@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -19,15 +20,17 @@ import {
 } from '@/components/ui/card'
 import { FullPageLoader } from '@/components/FullPageLoader'
 
+/** Validation RULES unchanged; only the MESSAGES are translation keys. */
 const registerSchema = z.object({
-  fullName: z.string().trim().min(2, 'Enter your full name'),
-  email: z.email('Enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  fullName: z.string().trim().min(2, 'vFullName'),
+  email: z.email('vEmail'),
+  password: z.string().min(8, 'vPasswordMin'),
 })
 
 type RegisterValues = z.infer<typeof registerSchema>
 
 export function RegisterPage() {
+  const { t } = useTranslation('auth')
   const { session, loading, signUp } = useAuth()
   const [formError, setFormError] = useState<string | null>(null)
   const [needsConfirmation, setNeedsConfirmation] = useState(false)
@@ -68,18 +71,15 @@ export function RegisterPage() {
       <div className="flex min-h-svh items-center justify-center px-4 py-12">
         <Card className="w-full max-w-sm">
           <CardHeader>
-            <CardTitle>Check your email</CardTitle>
-            <CardDescription>
-              We sent you a confirmation link. Confirm your address, then sign
-              in.
-            </CardDescription>
+            <CardTitle>{t('checkEmailTitle')}</CardTitle>
+            <CardDescription>{t('checkEmailBody')}</CardDescription>
           </CardHeader>
           <CardFooter>
             <Link
               to="/login"
               className={cn(buttonVariants(), 'w-full')}
             >
-              Go to sign in
+              {t('goToSignIn')}
             </Link>
           </CardFooter>
         </Card>
@@ -91,16 +91,14 @@ export function RegisterPage() {
     <div className="flex min-h-svh items-center justify-center px-4 py-12">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Create an account</CardTitle>
-          <CardDescription>
-            Start tracking your vehicle imports.
-          </CardDescription>
+          <CardTitle>{t('registerTitle')}</CardTitle>
+          <CardDescription>{t('registerSubtitle')}</CardDescription>
         </CardHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full name</Label>
+              <Label htmlFor="fullName">{t('fullName')}</Label>
               <Input
                 id="fullName"
                 type="text"
@@ -110,13 +108,13 @@ export function RegisterPage() {
               />
               {errors.fullName && (
                 <p className="text-destructive text-sm">
-                  {errors.fullName.message}
+                  {t(errors.fullName.message ?? '')}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -127,13 +125,13 @@ export function RegisterPage() {
               />
               {errors.email && (
                 <p className="text-destructive text-sm">
-                  {errors.email.message}
+                  {t(errors.email.message ?? '')}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('password')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -143,7 +141,7 @@ export function RegisterPage() {
               />
               {errors.password && (
                 <p className="text-destructive text-sm">
-                  {errors.password.message}
+                  {t(errors.password.message ?? '')}
                 </p>
               )}
             </div>
@@ -158,12 +156,12 @@ export function RegisterPage() {
           <CardFooter className="mt-6 flex-col gap-4">
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-              Create account
+              {t('createAccount')}
             </Button>
             <p className="text-muted-foreground text-sm">
-              Already registered?{' '}
+              {t('alreadyRegistered')}{' '}
               <Link to="/login" className="text-foreground underline">
-                Sign in
+                {t('signInTitle')}
               </Link>
             </p>
           </CardFooter>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Loader2 } from 'lucide-react'
 import {
   deriveBranches,
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/card'
 
 export function CalculatorPage() {
+  const { t } = useTranslation('calculator')
   const [rates, setRates] = useState<ShippingRate[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -73,7 +75,7 @@ export function CalculatorPage() {
       <Section>
         <div className="flex items-center gap-2">
           <Loader2 className="text-muted-foreground size-5 animate-spin" />
-          <span className="text-muted-foreground">Loading rates…</span>
+          <span className="text-muted-foreground">{t('loadingRates')}</span>
         </div>
       </Section>
     )
@@ -84,15 +86,12 @@ export function CalculatorPage() {
       <div className="space-y-8">
       <header className="max-w-2xl space-y-4">
         <span className="bg-accent text-accent-foreground inline-flex rounded-full px-4 py-2 text-sm font-medium">
-          Transportation pricing
+          {t('eyebrow')}
         </span>
         <h1 className="text-4xl font-bold tracking-tight text-balance sm:text-5xl">
-          Shipping calculator
+          {t('title')}
         </h1>
-        <p className="text-muted-foreground text-lg">
-          Choose the auction state and branch to see the transportation total.
-          Rates are read from our published rate table.
-        </p>
+        <p className="text-muted-foreground text-lg">{t('subtitle')}</p>
       </header>
 
       {loadError && (
@@ -101,7 +100,7 @@ export function CalculatorPage() {
           className="border-destructive/40 bg-destructive/5 text-destructive flex items-start gap-2 rounded-lg border p-4 text-sm"
         >
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-          <span>Could not load rates: {loadError}</span>
+          <span>{t('loadError', { error: loadError })}</span>
         </div>
       )}
 
@@ -111,24 +110,19 @@ export function CalculatorPage() {
           className="text-muted-foreground flex items-start gap-2 rounded-lg border p-4 text-sm"
         >
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-          <span>
-            No shipping rates are available yet. The rate table has not been
-            populated.
-          </span>
+          <span>{t('noRates')}</span>
         </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <Card className="border-border/60 shadow-soft">
           <CardHeader>
-            <CardTitle>Route</CardTitle>
-            <CardDescription>
-              Step 1: pick a state. Step 2: pick the auction branch.
-            </CardDescription>
+            <CardTitle>{t('routeTitle')}</CardTitle>
+            <CardDescription>{t('routeSubtitle')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="state-select">State</Label>
+              <Label htmlFor="state-select">{t('state')}</Label>
               <Select
                 items={stateItems}
                 value={stateCode}
@@ -139,7 +133,7 @@ export function CalculatorPage() {
                   className="w-full"
                   disabled={states.length === 0}
                 >
-                  <SelectValue placeholder="Select a state" />
+                  <SelectValue placeholder={t('selectState')} />
                 </SelectTrigger>
                 <SelectContent>
                   {stateItems.map((item) => (
@@ -152,7 +146,7 @@ export function CalculatorPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="branch-select">Branch</Label>
+              <Label htmlFor="branch-select">{t('branch')}</Label>
               <Select
                 items={branchItems}
                 value={branch}
@@ -165,7 +159,7 @@ export function CalculatorPage() {
                 >
                   <SelectValue
                     placeholder={
-                      stateCode ? 'Select a branch' : 'Select a state first'
+                      stateCode ? t('selectBranch') : t('selectStateFirst')
                     }
                   />
                 </SelectTrigger>
@@ -179,7 +173,7 @@ export function CalculatorPage() {
               </Select>
               {stateCode && branches.length === 0 && (
                 <p className="text-muted-foreground text-sm">
-                  No branches with a published rate in this state.
+                  {t('noBranches')}
                 </p>
               )}
             </div>
@@ -188,11 +182,9 @@ export function CalculatorPage() {
 
         <Card className="bg-gradient-subtle border-border/60 shadow-soft h-fit">
           <CardHeader>
-            <CardTitle>Transportation total</CardTitle>
+            <CardTitle>{t('totalTitle')}</CardTitle>
             <CardDescription>
-              {selectedBranch
-                ? 'Final price — no extra fees are added.'
-                : 'Pick a state and branch to see the price.'}
+              {selectedBranch ? t('totalFinal') : t('totalPrompt')}
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Car, Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -15,6 +16,7 @@ import {
 } from '@/components/ui/card'
 
 export function DashboardPage() {
+  const { t } = useTranslation(['dashboard', 'common'])
   const { session, profile } = useAuth()
   const userId = session?.user.id ?? null
   const [vehicleCount, setVehicleCount] = useState<number | null>(null)
@@ -37,7 +39,7 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+      <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
 
       <div className="grid gap-5 sm:grid-cols-3">
         {/*
@@ -47,9 +49,9 @@ export function DashboardPage() {
         */}
         <Card className="border-border/60 shadow-soft">
           <CardHeader>
-            <CardDescription>Account</CardDescription>
+            <CardDescription>{t('account')}</CardDescription>
             <CardTitle className="text-lg">
-              {displayText(profile?.full_name, 'No name set')}
+              {displayText(profile?.full_name, t('noNameSet'))}
             </CardTitle>
           </CardHeader>
           <CardContent className="text-muted-foreground truncate text-sm">
@@ -59,19 +61,19 @@ export function DashboardPage() {
 
         <Card className="bg-gradient-subtle border-border/60 shadow-soft">
           <CardHeader>
-            <CardDescription>Balance</CardDescription>
+            <CardDescription>{t('balance')}</CardDescription>
             <CardTitle className="text-primary text-3xl font-bold tabular-nums">
               {formatCurrency(profile?.balance)}
             </CardTitle>
           </CardHeader>
           <CardContent className="text-muted-foreground text-sm">
-            Managed by our staff.
+            {t('balanceHint')}
           </CardContent>
         </Card>
 
         <Card className="border-border/60 shadow-soft">
           <CardHeader>
-            <CardDescription>Vehicles</CardDescription>
+            <CardDescription>{t('vehicles')}</CardDescription>
             <CardTitle className="text-3xl font-bold tabular-nums">
               {vehicleCount ?? '—'}
             </CardTitle>
@@ -85,7 +87,7 @@ export function DashboardPage() {
               )}
             >
               <Car className="size-4" />
-              View all
+              {t('viewAll')}
             </Link>
           </CardContent>
         </Card>
@@ -97,7 +99,7 @@ export function DashboardPage() {
           className={cn(buttonVariants(), 'shadow-soft rounded-full px-6')}
         >
           <Plus className="size-4" />
-          Add vehicle
+          {t('addVehicle')}
         </Link>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Check, Loader2, Search } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { VEHICLE_STATUSES, type Vehicle } from '@/types/database'
@@ -9,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Section, SectionHeading } from '@/components/Section'
 import { VehicleStatusBadge } from '@/components/VehicleStatusBadge'
+import { statusLabel } from '@/i18n/labels'
 import { cn } from '@/lib/utils'
 
 type Result =
@@ -18,6 +20,7 @@ type Result =
   | { kind: 'missing' }
 
 export function TrackingPage() {
+  const { t } = useTranslation(['tracking', 'common'])
   const [vin, setVin] = useState('')
   const [result, setResult] = useState<Result>({ kind: 'idle' })
   const [formError, setFormError] = useState<string | null>(null)
@@ -28,7 +31,7 @@ export function TrackingPage() {
 
     const trimmed = vin.trim().toUpperCase()
     if (trimmed.length !== 17) {
-      setFormError('A VIN is exactly 17 characters.')
+      setFormError(t('vinLength'))
       return
     }
 
@@ -50,7 +53,7 @@ export function TrackingPage() {
       .maybeSingle<Vehicle>()
 
     if (error) {
-      setFormError(`Could not run the lookup: ${error.message}`)
+      setFormError(t('lookupError', { error: error.message }))
       setResult({ kind: 'idle' })
       return
     }
@@ -67,15 +70,15 @@ export function TrackingPage() {
     <Section>
       <div className="mx-auto max-w-4xl">
         <SectionHeading
-          eyebrow="TRACKING"
-          title="Track your vehicle"
-          subtitle="Enter the 17-character VIN to see live status."
+          eyebrow={t('eyebrow')}
+          title={t('title')}
+          subtitle={t('subtitle')}
           centered
         />
 
         <form onSubmit={onSubmit} className="mx-auto mt-10 max-w-xl" noValidate>
           <Label htmlFor="vin-input" className="sr-only">
-            VIN
+            {t('common:vin')}
           </Label>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Input
@@ -100,7 +103,7 @@ export function TrackingPage() {
               ) : (
                 <Search className="size-4" />
               )}
-              Track
+              {t('track')}
             </Button>
           </div>
           {formError && (
@@ -113,11 +116,9 @@ export function TrackingPage() {
         {result.kind === 'missing' && (
           <Card className="border-border/60 shadow-soft mx-auto mt-8 max-w-xl">
             <CardContent className="pt-6 text-center">
-              <p className="font-medium">Not found or not available</p>
+              <p className="font-medium">{t('notFoundTitle')}</p>
               <p className="text-muted-foreground mt-2 text-sm">
-                We could not find a vehicle you can view with that VIN. If the
-                car is yours, sign in first — tracking shows the vehicles on
-                your own account.
+                {t('notFoundBody')}
               </p>
             </CardContent>
           </Card>
@@ -143,19 +144,19 @@ export function TrackingPage() {
               <CardContent>
                 <dl className="grid gap-4 sm:grid-cols-3">
                   <div>
-                    <dt className="text-muted-foreground text-sm">Container</dt>
+                    <dt className="text-muted-foreground text-sm">{t('container')}</dt>
                     <dd className="font-medium">
                       {displayText(vehicle.container_number)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground text-sm">Booking</dt>
+                    <dt className="text-muted-foreground text-sm">{t('booking')}</dt>
                     <dd className="font-medium">
                       {displayText(vehicle.booking_number)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground text-sm">Added</dt>
+                    <dt className="text-muted-foreground text-sm">{t('added')}</dt>
                     <dd className="font-medium">
                       {formatDate(vehicle.created_at)}
                     </dd>
@@ -166,7 +167,7 @@ export function TrackingPage() {
 
             <Card className="border-border/60 shadow-soft">
               <CardHeader>
-                <CardTitle className="text-base">Status timeline</CardTitle>
+                <CardTitle className="text-base">{t('timeline')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ol className="space-y-0">
@@ -211,10 +212,15 @@ export function TrackingPage() {
                               done ? 'text-foreground' : 'text-muted-foreground',
                             )}
                           >
-                            {stage}
+                            {/*
+                              `stage` is the stored English status value; only
+                              its label is localised. Never feed a translated
+                              string back into a query or comparison.
+                            */}
+                            {statusLabel(stage)}
                             {isCurrent && (
                               <span className="text-primary ml-2 text-sm font-semibold">
-                                Current
+                                {t('current')}
                               </span>
                             )}
                           </p>
