@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Loader2, X } from 'lucide-react'
+import { AlertTriangle, Check, Loader2, RotateCcw, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/use-auth'
 import type { Vehicle, VehiclePhoto } from '@/types/database'
@@ -13,6 +13,7 @@ import {
   uploadVehiclePhoto,
   validatePhoto,
 } from '@/lib/storage'
+import { compressImage, formatBytes } from '@/lib/image-compress'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -71,16 +72,34 @@ function nullIfBlank(value: string | undefined): string | null {
   return trimmed === '' ? null : trimmed
 }
 
+type PhotoStatus = 'pending' | 'compressing' | 'uploading' | 'done' | 'failed'
+
+/** One picked file and where it has got to. `error` is already translated. */
+interface PhotoItem {
+  id: string
+  file: File
+  status: PhotoStatus
+  error: string | null
+  originalBytes: number
+  /** Set once compression actually shrank the file, for the "5 MB -> 1.8 MB" line. */
+  finalBytes: number | null
+}
+
 export function AddVehiclePage() {
   const { t } = useTranslation(['vehicles', 'common'])
   const { session } = useAuth()
   const navigate = useNavigate()
   const userId = session?.user.id ?? null
 
-  const [files, setFiles] = useState<File[]>([])
-  const [fileError, setFileError] = useState<string | null>(null)
+  const [items, setItems] = useState<PhotoItem[]>([])
   const [formError, setFormError] = useState<string | null>(null)
   const [photoWarning, setPhotoWarning] = useState<string | null>(null)
+  /*
+    Set once the vehicle row exists. Its presence is what lets the user retry
+    only the failed photos without creating a second vehicle.
+  */
+  const [savedVehicleId, setSavedVehicleId] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   const {
     register,
@@ -103,21 +122,136 @@ export function AddVehiclePage() {
     },
   })
 
+  /*
+    Every picked file becomes a row, valid or not. The old version threw the
+    WHOLE selection away as soon as one file failed validation, which is what
+    made "I picked ten photos and nothing happened" possible.
+  */
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFileError(null)
     const picked = [...(event.target.files ?? [])]
-    const problems = picked.map(validatePhoto).filter((p): p is string => p !== null)
-    if (problems.length > 0) {
-      setFileError(problems.join('; '))
-      return
-    }
-    setFiles((current) => [...current, ...picked])
+    setItems((current) => [
+      ...current,
+      ...picked.map((file) => {
+        const problem = validatePhoto(file)
+        return {
+          id: crypto.randomUUID(),
+          file,
+          status: problem ? ('failed' as const) : ('pending' as const),
+          error: problem ? t(problem.key, problem.values) : null,
+          originalBytes: file.size,
+          finalBytes: null,
+        }
+      }),
+    ])
     // Reset so re-picking the same file still fires a change event.
     event.target.value = ''
   }
 
-  const removeFile = (index: number) => {
-    setFiles((current) => current.filter((_, i) => i !== index))
+  const removeItem = (id: string) => {
+    setItems((current) => current.filter((item) => item.id !== id))
+  }
+
+  const patchItem = (id: string, patch: Partial<PhotoItem>) => {
+    setItems((current) =>
+      current.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    )
+  }
+
+  /**
+   * Compresses and uploads the given rows one at a time, reporting progress
+   * per file. A failure is recorded on its own row and the loop continues --
+   * one bad photo never costs the customer the other nine.
+   */
+  const runUploads = async (
+    ownerId: string,
+    vehicleId: string,
+    queue: PhotoItem[],
+  ): Promise<{ paths: string[]; failed: number }> => {
+    const uploadedPaths: string[] = []
+    let failed = 0
+
+    for (const item of queue) {
+      const problem = validatePhoto(item.file)
+      if (problem) {
+        failed += 1
+        patchItem(item.id, {
+          status: 'failed',
+          error: t(problem.key, problem.values),
+        })
+        continue
+      }
+
+      patchItem(item.id, { status: 'compressing', error: null })
+      const { file: toUpload, compressed } = await compressImage(item.file)
+
+      // Re-check AFTER compressing: a file can still be over the ceiling.
+      const afterProblem = validatePhoto(toUpload)
+      if (afterProblem) {
+        failed += 1
+        patchItem(item.id, {
+          status: 'failed',
+          error: t(afterProblem.key, afterProblem.values),
+        })
+        continue
+      }
+
+      patchItem(item.id, {
+        status: 'uploading',
+        finalBytes: compressed ? toUpload.size : null,
+      })
+
+      const { path, error } = await uploadVehiclePhoto(
+        ownerId,
+        vehicleId,
+        toUpload,
+      )
+
+      if (path) {
+        uploadedPaths.push(path)
+        patchItem(item.id, { status: 'done', error: null })
+      } else {
+        failed += 1
+        patchItem(item.id, { status: 'failed', error })
+      }
+    }
+
+    return { paths: uploadedPaths, failed }
+  }
+
+  /** Links uploaded storage paths to the vehicle. Returns a failure message. */
+  const linkPhotos = async (
+    vehicleId: string,
+    paths: string[],
+  ): Promise<string | null> => {
+    if (paths.length === 0) return null
+    const { data: photoRows, error: photoError } = await supabase
+      .from('vehicle_photos')
+      .insert(paths.map((path) => ({ vehicle_id: vehicleId, url: path })))
+      .select()
+      .returns<VehiclePhoto[]>()
+
+    if (photoError) return photoError.message
+    if ((photoRows?.length ?? 0) !== paths.length) {
+      return 'Some photos uploaded but could not be linked to the vehicle.'
+    }
+    return null
+  }
+
+  /** Retries only the rows that failed, against the already-saved vehicle. */
+  const retryFailed = async () => {
+    if (!savedVehicleId || !userId) return
+    const failed = items.filter((item) => item.status === 'failed')
+    if (failed.length === 0) return
+
+    setUploading(true)
+    setPhotoWarning(null)
+    const { paths } = await runUploads(userId, savedVehicleId, failed)
+    const linkError = await linkPhotos(savedVehicleId, paths)
+    setUploading(false)
+
+    if (linkError) {
+      setPhotoWarning(t('warnPhotos', { errors: linkError }))
+    }
   }
 
   const onSubmit = async (values: VehicleValues) => {
@@ -162,47 +296,46 @@ export function AddVehiclePage() {
       return
     }
 
-    if (files.length > 0) {
-      const uploadedPaths: string[] = []
-      const failures: string[] = []
+    setSavedVehicleId(inserted.id)
 
-      for (const file of files) {
-        const { path, error } = await uploadVehiclePhoto(
-          userId,
-          inserted.id,
-          file,
-        )
-        if (path) uploadedPaths.push(path)
-        if (error) failures.push(error)
-      }
+    if (items.length > 0) {
+      setUploading(true)
+      const { paths, failed } = await runUploads(userId, inserted.id, items)
+      const linkError = await linkPhotos(inserted.id, paths)
+      setUploading(false)
 
-      if (uploadedPaths.length > 0) {
-        const { data: photoRows, error: photoError } = await supabase
-          .from('vehicle_photos')
-          .insert(uploadedPaths.map((path) => ({
-            vehicle_id: inserted.id,
-            url: path,
-          })))
-          .select()
-          .returns<VehiclePhoto[]>()
-
-        if (photoError) {
-          failures.push(photoError.message)
-        } else if ((photoRows?.length ?? 0) !== uploadedPaths.length) {
-          failures.push(
-            'Some photos uploaded but could not be linked to the vehicle.',
-          )
-        }
-      }
-
-      if (failures.length > 0) {
+      if (linkError) {
         // The vehicle itself is saved, so this is a warning, not a failure.
-        setPhotoWarning(t('warnPhotos', { errors: failures.join('; ') }))
+        setPhotoWarning(t('warnPhotos', { errors: linkError }))
         return
       }
+
+      /*
+        Stay on the page when anything failed so the customer can retry just
+        those files. Navigating away would silently lose them.
+      */
+      if (failed > 0) return
     }
 
     navigate('/vehicles', { replace: true })
+  }
+
+  const doneCount = items.filter((item) => item.status === 'done').length
+  const failedCount = items.filter((item) => item.status === 'failed').length
+
+  const photoStatusLabel = (item: PhotoItem): string => {
+    switch (item.status) {
+      case 'compressing':
+        return t('photoStateCompressing')
+      case 'uploading':
+        return t('photoStateUploading')
+      case 'done':
+        return t('photoStateDone')
+      case 'failed':
+        return t('photoStateFailed')
+      default:
+        return t('photoStatePending')
+    }
   }
 
   const textField = (
@@ -274,29 +407,106 @@ export function AddVehiclePage() {
               <p className="text-muted-foreground text-sm">
                 {t('photoHint')}
               </p>
-              {fileError && (
-                <p className="text-destructive text-sm">{fileError}</p>
-              )}
-              {files.length > 0 && (
-                <ul className="space-y-1 pt-1">
-                  {files.map((file, index) => (
-                    <li
-                      key={`${file.name}-${index}`}
-                      className="bg-secondary/50 border-border/60 flex items-center justify-between gap-2 rounded-lg border px-3 py-1.5 text-sm"
-                    >
-                      <span className="truncate">{file.name}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => removeFile(index)}
-                        aria-label={t('removeFile', { name: file.name })}
+
+              {items.length > 0 && (
+                <>
+                  <p
+                    className="text-muted-foreground pt-1 text-sm"
+                    aria-live="polite"
+                  >
+                    {t('photoSelected', { count: items.length })}
+                    {(doneCount > 0 || failedCount > 0) && (
+                      <>
+                        {' — '}
+                        {t('photoSummary', {
+                          done: doneCount,
+                          total: items.length,
+                          failed: failedCount,
+                        })}
+                      </>
+                    )}
+                  </p>
+
+                  <ul className="space-y-1 pt-1">
+                    {items.map((item) => (
+                      <li
+                        key={item.id}
+                        className="bg-secondary/50 border-border/60 rounded-lg border px-3 py-2 text-sm"
                       >
-                        <X className="size-4" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate">{item.file.name}</span>
+
+                          <div className="flex shrink-0 items-center gap-2">
+                            <span
+                              className={
+                                item.status === 'failed'
+                                  ? 'text-destructive text-xs font-medium'
+                                  : 'text-muted-foreground text-xs'
+                              }
+                            >
+                              {photoStatusLabel(item)}
+                            </span>
+
+                            {item.status === 'done' && (
+                              <Check
+                                className="text-primary size-4"
+                                aria-hidden="true"
+                              />
+                            )}
+                            {(item.status === 'compressing' ||
+                              item.status === 'uploading') && (
+                              <Loader2
+                                className="text-muted-foreground size-4 animate-spin"
+                                aria-hidden="true"
+                              />
+                            )}
+
+                            {!uploading && item.status !== 'done' && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => removeItem(item.id)}
+                                aria-label={t('photoRemove', {
+                                  name: item.file.name,
+                                })}
+                              >
+                                <X className="size-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
+                        {item.finalBytes !== null && (
+                          <p className="text-muted-foreground pt-0.5 text-xs tabular-nums">
+                            {t('photoCompressedTo', {
+                              from: formatBytes(item.originalBytes),
+                              to: formatBytes(item.finalBytes),
+                            })}
+                          </p>
+                        )}
+
+                        {item.error && (
+                          <p className="text-destructive pt-0.5 text-xs">
+                            {item.error}
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {savedVehicleId && failedCount > 0 && !uploading && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-11 rounded-full md:h-8"
+                      onClick={retryFailed}
+                    >
+                      <RotateCcw className="size-4" />
+                      {t('photoRetryFailed')}
+                    </Button>
+                  )}
+                </>
               )}
             </div>
 

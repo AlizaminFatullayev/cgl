@@ -11,12 +11,16 @@ import { formatCurrency } from '@/lib/format'
 import { Section } from '@/components/Section'
 import { Label } from '@/components/ui/label'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  Combobox,
+  ComboboxCollection,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from '@/components/ui/combobox'
+import { matchesQuery } from '@/lib/search-match'
 import {
   Card,
   CardContent,
@@ -24,6 +28,22 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+
+/** What both pickers hand around. `code` is empty for branch options. */
+interface Option {
+  value: string
+  label: string
+  code: string
+}
+
+/**
+ * Matches against the visible label AND the underlying code, so "AL" finds
+ * Alabama even though the label starts with "Alabama". Pure -- the same query
+ * always yields the same list.
+ */
+function filterOption(item: Option, query: string): boolean {
+  return matchesQuery([item.label, item.value, item.code], query)
+}
 
 export function CalculatorPage() {
   const { t } = useTranslation('calculator')
@@ -33,6 +53,10 @@ export function CalculatorPage() {
 
   const [stateCode, setStateCode] = useState<string | null>(null)
   const [branch, setBranch] = useState<string | null>(null)
+
+  // Only so the "nothing matches" line can quote what was typed.
+  const [stateQuery, setStateQuery] = useState('')
+  const [branchQuery, setBranchQuery] = useState('')
 
   useEffect(() => {
     let active = true
@@ -55,19 +79,33 @@ export function CalculatorPage() {
 
   const selectedBranch = branches.find((item) => item.branch === branch) ?? null
 
-  const stateItems = useMemo(
-    () => states.map((s) => ({ value: s.code, label: `${s.name} (${s.code})` })),
+  const stateItems: Option[] = useMemo(
+    () =>
+      states.map((s) => ({
+        value: s.code,
+        label: `${s.name} (${s.code})`,
+        code: s.code,
+      })),
     [states],
   )
-  const branchItems = useMemo(
-    () => branches.map((b) => ({ value: b.branch, label: b.branch })),
+  const branchItems: Option[] = useMemo(
+    () => branches.map((b) => ({ value: b.branch, label: b.branch, code: '' })),
     [branches],
   )
 
-  const handleStateChange = (next: string | null) => {
-    setStateCode(next)
+  const selectedStateItem =
+    stateItems.find((item) => item.value === stateCode) ?? null
+  const selectedBranchItem =
+    branchItems.find((item) => item.value === branch) ?? null
+
+  const handleStateChange = (next: Option | null) => {
+    setStateCode(next?.value ?? null)
     // The previously chosen branch belongs to the old state, so clear it.
     setBranch(null)
+  }
+
+  const handleBranchChange = (next: Option | null) => {
+    setBranch(next?.value ?? null)
   }
 
   if (loading) {
@@ -114,89 +152,149 @@ export function CalculatorPage() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className="grid items-start gap-6 lg:grid-cols-[1fr_22rem]">
         <Card className="border-border/60 shadow-soft">
           <CardHeader>
-            <CardTitle>{t('routeTitle')}</CardTitle>
+            <CardTitle className="text-xl">{t('routeTitle')}</CardTitle>
             <CardDescription>{t('routeSubtitle')}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="state-select">{t('state')}</Label>
-              <Select
+
+          {/* Roomier than the default: two fields with hints read better with air. */}
+          <CardContent className="space-y-8">
+            <div className="space-y-2.5">
+              <div className="flex items-baseline gap-2.5">
+                <span className="bg-accent text-accent-foreground rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide">
+                  {t('stepOne')}
+                </span>
+                <Label htmlFor="state-select" className="text-base font-semibold">
+                  {t('state')}
+                </Label>
+              </div>
+
+              <Combobox
                 items={stateItems}
-                value={stateCode}
+                value={selectedStateItem}
                 onValueChange={handleStateChange}
+                onInputValueChange={setStateQuery}
+                filter={filterOption}
               >
-                <SelectTrigger
-                  id="state-select"
-                  /* 44px touch target on phones; the desktop height is unchanged. */
-                  className="w-full data-[size=default]:h-11 md:data-[size=default]:h-8"
-                  disabled={states.length === 0}
-                >
-                  <SelectValue placeholder={t('selectState')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {stateItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <div className="relative">
+                  <ComboboxInput
+                    id="state-select"
+                    className="h-11 md:h-8"
+                    placeholder={t('selectState')}
+                    disabled={states.length === 0}
+                  />
+                  <ComboboxTrigger aria-label={t('selectState')} />
+                </div>
+                <ComboboxContent>
+                  <ComboboxEmpty>
+                    {t('noMatch', { query: stateQuery })}
+                  </ComboboxEmpty>
+                  <ComboboxList>
+                    <ComboboxCollection>
+                      {(item: Option) => (
+                        <ComboboxItem key={item.value} value={item}>
+                          {item.label}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxCollection>
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+
+              <p className="text-muted-foreground text-sm">
+                {t('searchStateHint')}
+              </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="branch-select">{t('branch')}</Label>
-              <Select
+            <div className="space-y-2.5">
+              <div className="flex items-baseline gap-2.5">
+                <span className="bg-accent text-accent-foreground rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide">
+                  {t('stepTwo')}
+                </span>
+                <Label htmlFor="branch-select" className="text-base font-semibold">
+                  {t('branch')}
+                </Label>
+              </div>
+
+              <Combobox
                 items={branchItems}
-                value={branch}
-                onValueChange={setBranch}
+                value={selectedBranchItem}
+                onValueChange={handleBranchChange}
+                onInputValueChange={setBranchQuery}
+                filter={filterOption}
               >
-                <SelectTrigger
-                  id="branch-select"
-                  className="w-full data-[size=default]:h-11 md:data-[size=default]:h-8"
-                  disabled={!stateCode || branches.length === 0}
-                >
-                  <SelectValue
+                <div className="relative">
+                  <ComboboxInput
+                    id="branch-select"
+                    className="h-11 md:h-8"
                     placeholder={
                       stateCode ? t('selectBranch') : t('selectStateFirst')
                     }
+                    disabled={!stateCode || branches.length === 0}
                   />
-                </SelectTrigger>
-                <SelectContent>
-                  {branchItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {stateCode && branches.length === 0 && (
-                <p className="text-muted-foreground text-sm">
-                  {t('noBranches')}
-                </p>
-              )}
+                  <ComboboxTrigger aria-label={t('selectBranch')} />
+                </div>
+                <ComboboxContent>
+                  <ComboboxEmpty>
+                    {t('noMatch', { query: branchQuery })}
+                  </ComboboxEmpty>
+                  <ComboboxList>
+                    <ComboboxCollection>
+                      {(item: Option) => (
+                        <ComboboxItem key={item.value} value={item}>
+                          {item.label}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxCollection>
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+
+              <p className="text-muted-foreground text-sm">
+                {stateCode && branches.length === 0
+                  ? t('noBranches')
+                  : t('searchBranchHint')}
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-subtle border-border/60 shadow-soft h-fit">
-          <CardHeader>
-            <CardTitle>{t('totalTitle')}</CardTitle>
-            <CardDescription>
-              {selectedBranch ? t('totalFinal') : t('totalPrompt')}
+        {/*
+          The result panel is deliberately a different surface from the input
+          card -- tinted background, heavier ring -- so it reads as an answer
+          rather than another field. Tokens only, no new colours.
+        */}
+        <Card className="bg-gradient-subtle border-border/60 ring-primary/15 shadow-soft h-fit ring-2">
+          <CardHeader className="pb-3">
+            <CardDescription className="text-xs font-semibold tracking-widest uppercase">
+              {t('totalTitle')}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+
+          <CardContent className="space-y-4">
             {/* The stored rate IS the final price. Never apply a markup here. */}
-            <p className="text-primary text-4xl font-bold tabular-nums">
+            <p className="text-primary text-5xl leading-none font-bold tabular-nums">
               {selectedBranch ? formatCurrency(selectedBranch.rate) : '—'}
             </p>
-            {selectedBranch && (
-              <p className="text-muted-foreground mt-2 text-sm">
-                {selectedBranch.branch}
-                {stateCode ? `, ${stateCode}` : ''}
+
+            {selectedBranch ? (
+              <div className="border-border/60 space-y-1 border-t pt-4">
+                <p className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">
+                  {t('routeSummary')}
+                </p>
+                <p className="text-foreground font-medium">
+                  {selectedBranch.branch}
+                  {stateCode ? `, ${stateCode}` : ''}
+                </p>
+                <p className="text-muted-foreground pt-2 text-sm">
+                  {t('totalFinal')}
+                </p>
+              </div>
+            ) : (
+              <p className="text-muted-foreground border-border/60 border-t pt-4 text-sm">
+                {t('totalPrompt')}
               </p>
             )}
           </CardContent>

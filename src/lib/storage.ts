@@ -2,14 +2,39 @@ import { supabase } from '@/lib/supabase'
 
 export const VEHICLE_PHOTOS_BUCKET = 'vehicle-photos'
 
-/** Mirrors the bucket limits declared in 0008_vehicle_photos_storage.sql. */
-export const MAX_PHOTO_BYTES = 10 * 1024 * 1024
+/**
+ * Mirrors the bucket limits declared in the storage migrations.
+ *
+ * 50 MB matches 0012_vehicle_photos_50mb.sql. It is a ceiling, not a target:
+ * the browser downscales and re-encodes before upload (src/lib/image-compress.ts),
+ * so a typical photo arrives around 2 MB. Keep this in step with the bucket --
+ * a client limit above the bucket's just turns a friendly message into an
+ * opaque storage error.
+ */
+export const MAX_PHOTO_BYTES = 50 * 1024 * 1024
 export const ACCEPTED_PHOTO_TYPES = [
   'image/jpeg',
   'image/png',
   'image/webp',
   'image/avif',
 ]
+
+/**
+ * Types worth naming in an error, because desktop users hit them constantly.
+ * HEIC is what a Mac hands you when you drag a photo out of Photos, and no
+ * amount of client code can decode it without a heavy wasm dependency.
+ */
+const KNOWN_UNSUPPORTED = new Set([
+  'image/heic',
+  'image/heif',
+  'image/heic-sequence',
+  'image/heif-sequence',
+])
+
+function humanBytes(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 function fileExtension(file: File): string {
   const fromName = file.name.split('.').pop()?.toLowerCase()
@@ -30,13 +55,38 @@ export function buildPhotoPath(
   return `${userId}/${vehicleId}/${crypto.randomUUID()}.${fileExtension(file)}`
 }
 
-/** Client-side mirror of the bucket constraints, for a friendlier message. */
-export function validatePhoto(file: File): string | null {
+/**
+ * Client-side mirror of the bucket constraints.
+ *
+ * Returns an i18n key plus its interpolation values rather than a sentence, so
+ * the message reaches the customer in their own language. The size message
+ * names BOTH the actual size and the limit -- "too large" alone leaves the
+ * customer with nothing to act on.
+ */
+export type PhotoProblem = {
+  key: 'errPhotoHeic' | 'errPhotoType' | 'errPhotoTooLarge'
+  values: Record<string, string>
+}
+
+export function validatePhoto(file: File): PhotoProblem | null {
+  if (KNOWN_UNSUPPORTED.has(file.type)) {
+    return { key: 'errPhotoHeic', values: { name: file.name } }
+  }
   if (!ACCEPTED_PHOTO_TYPES.includes(file.type)) {
-    return `${file.name}: unsupported type (use JPEG, PNG, WebP or AVIF)`
+    return {
+      key: 'errPhotoType',
+      values: { name: file.name, type: file.type || 'unknown' },
+    }
   }
   if (file.size > MAX_PHOTO_BYTES) {
-    return `${file.name}: larger than 10 MB`
+    return {
+      key: 'errPhotoTooLarge',
+      values: {
+        name: file.name,
+        size: humanBytes(file.size),
+        limit: humanBytes(MAX_PHOTO_BYTES),
+      },
+    }
   }
   return null
 }
