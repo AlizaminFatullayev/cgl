@@ -91,11 +91,11 @@ export function TrackingPage() {
               spellCheck={false}
               aria-invalid={Boolean(formError)}
               aria-describedby={formError ? 'vin-error' : undefined}
-              className="font-mono uppercase sm:flex-1"
+              className="h-11 font-mono uppercase sm:flex-1 md:h-8"
             />
             <Button
               type="submit"
-              className="shadow-soft rounded-full px-6"
+              className="shadow-soft h-11 rounded-full px-6 md:h-8"
               disabled={result.kind === 'searching'}
             >
               {result.kind === 'searching' ? (

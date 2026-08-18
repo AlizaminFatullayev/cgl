@@ -32,6 +32,8 @@ export const az: Catalogue = {
     pageNotFound: 'Səhifə tapılmadı',
     notAvailable: '—',
     language: 'Dil',
+    menu: 'Menyu',
+    openMenu: 'Menyunu aç',
     /**
      * DISPLAY ONLY. The keys are the exact English values stored in
      * vehicles.status, enforced by a CHECK constraint and the

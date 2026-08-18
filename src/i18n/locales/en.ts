@@ -25,6 +25,8 @@ export const en = {
     pageNotFound: 'Page not found',
     notAvailable: '—',
     language: 'Language',
+    menu: 'Menu',
+    openMenu: 'Open menu',
     /**
      * Vehicle status labels.
      *

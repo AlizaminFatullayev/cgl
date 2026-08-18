@@ -23,7 +23,7 @@ export function ContactPage() {
               <li key={phone}>
                 <a
                   href={`tel:${phone}`}
-                  className="text-foreground hover:text-primary transition-smooth flex items-center gap-3 text-lg font-medium tabular-nums"
+                  className="text-foreground hover:text-primary transition-smooth flex min-h-11 items-center gap-3 text-lg font-medium tabular-nums"
                 >
                   <span className="bg-accent text-accent-foreground flex size-9 items-center justify-center rounded-xl">
                     <Phone className="size-4" aria-hidden="true" />

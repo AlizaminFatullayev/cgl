@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { MapPin, Phone } from 'lucide-react'
 import { Logo } from '@/components/Logo'
 
-/** The four numbers appear here and in the Home contact section. */
+/** These numbers appear here, in the Home contact section and on /contact. */
 export const PHONE_NUMBERS = [
+  '0102410740',
   '0102410741',
   '0102410742',
   '0102410743',
@@ -50,7 +51,8 @@ export function SiteFooter() {
                 <li key={link.to}>
                   <Link
                     to={link.to}
-                    className="text-muted-foreground hover:text-primary transition-smooth text-sm"
+                    /* min-h-11 gives a 44px tap target on phones only. */
+                    className="text-muted-foreground hover:text-primary transition-smooth inline-flex min-h-11 items-center text-sm md:min-h-0"
                   >
                     {t(link.key)}
                   </Link>
@@ -71,7 +73,8 @@ export function SiteFooter() {
                 <li key={link.to}>
                   <Link
                     to={link.to}
-                    className="text-muted-foreground hover:text-primary transition-smooth text-sm"
+                    /* min-h-11 gives a 44px tap target on phones only. */
+                    className="text-muted-foreground hover:text-primary transition-smooth inline-flex min-h-11 items-center text-sm md:min-h-0"
                   >
                     {t(link.key)}
                   </Link>
@@ -89,7 +92,7 @@ export function SiteFooter() {
                 <li key={phone}>
                   <a
                     href={`tel:${phone}`}
-                    className="text-muted-foreground hover:text-primary transition-smooth flex items-center gap-2 text-sm"
+                    className="text-muted-foreground hover:text-primary transition-smooth flex min-h-11 items-center gap-2 text-sm md:min-h-0"
                   >
                     <Phone className="size-3.5 shrink-0" aria-hidden="true" />
                     {phone}

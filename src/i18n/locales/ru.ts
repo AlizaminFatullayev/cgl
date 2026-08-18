@@ -32,6 +32,8 @@ export const ru: Catalogue = {
     pageNotFound: 'Страница не найдена',
     notAvailable: '—',
     language: 'Язык',
+    menu: 'Меню',
+    openMenu: 'Открыть меню',
     /**
      * DISPLAY ONLY. The keys are the exact English values stored in
      * vehicles.status, enforced by a CHECK constraint and the

@@ -130,7 +130,8 @@ export function CalculatorPage() {
               >
                 <SelectTrigger
                   id="state-select"
-                  className="w-full"
+                  /* 44px touch target on phones; the desktop height is unchanged. */
+                  className="w-full data-[size=default]:h-11 md:data-[size=default]:h-8"
                   disabled={states.length === 0}
                 >
                   <SelectValue placeholder={t('selectState')} />
@@ -154,7 +155,7 @@ export function CalculatorPage() {
               >
                 <SelectTrigger
                   id="branch-select"
-                  className="w-full"
+                  className="w-full data-[size=default]:h-11 md:data-[size=default]:h-8"
                   disabled={!stateCode || branches.length === 0}
                 >
                   <SelectValue

@@ -101,7 +101,7 @@ export function HomePage() {
                 to="/tracking"
                 className={cn(
                   buttonVariants({ size: 'lg' }),
-                  'bg-card text-primary hover:bg-card/90 shadow-soft rounded-full px-6',
+                  'bg-card text-primary hover:bg-card/90 shadow-soft h-11 rounded-full px-6 md:h-9',
                 )}
               >
                 <Search className="size-4" />
@@ -111,7 +111,7 @@ export function HomePage() {
                 to="/calculator"
                 className={cn(
                   buttonVariants({ variant: 'outline', size: 'lg' }),
-                  'border-primary-foreground/40 text-primary-foreground rounded-full bg-transparent px-6 hover:bg-white/10 hover:text-white',
+                  'border-primary-foreground/40 text-primary-foreground h-11 rounded-full bg-transparent px-6 hover:bg-white/10 hover:text-white md:h-9',
                 )}
               >
                 <Calculator className="size-4" />
@@ -260,7 +260,9 @@ export function HomePage() {
         <Accordion className="mx-auto mt-10 max-w-3xl">
           {FAQ.map((key) => (
             <AccordionItem key={key} value={key}>
-              <AccordionTrigger>{t(`${key}Q`)}</AccordionTrigger>
+              <AccordionTrigger className="min-h-11 md:min-h-0">
+                {t(`${key}Q`)}
+              </AccordionTrigger>
               <AccordionContent>{t(`${key}A`)}</AccordionContent>
             </AccordionItem>
           ))}
@@ -284,7 +286,7 @@ export function HomePage() {
                 <li key={phone}>
                   <a
                     href={`tel:${phone}`}
-                    className="text-foreground hover:text-primary transition-smooth flex items-center gap-3 text-lg font-medium tabular-nums"
+                    className="text-foreground hover:text-primary transition-smooth flex min-h-11 items-center gap-3 text-lg font-medium tabular-nums"
                   >
                     <span className="bg-accent text-accent-foreground flex size-9 items-center justify-center rounded-xl">
                       <Phone className="size-4" aria-hidden="true" />

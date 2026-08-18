@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/auth/use-auth'
 import { HeaderLogo } from '@/components/Logo'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { MobileNav } from '@/components/MobileNav'
 import { buttonVariants } from '@/components/ui/button'
 import { SiteFooter } from '@/components/SiteFooter'
 import { cn } from '@/lib/utils'
@@ -36,22 +37,31 @@ export function PublicLayout() {
     <div className="flex min-h-svh flex-col">
       <header className="border-border/60 bg-background/80 sticky top-0 z-50 w-full border-b backdrop-blur-xl">
         <nav className="container mx-auto flex flex-wrap items-center gap-1 px-4 py-3 sm:px-6">
-          <Link to="/" className="mr-4 flex items-center">
+          <Link to="/" className="mr-4 flex min-h-11 items-center md:min-h-0">
             <HeaderLogo />
           </Link>
 
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={linkClass}
-            >
-              {t(`nav:${item.key}`)}
-            </NavLink>
-          ))}
+          {/*
+            `md:contents` makes this wrapper vanish from the layout at desktop,
+            so the links stay direct flex children of <nav> exactly as before.
+            Below md they are hidden and MobileNav takes over.
+          */}
+          <div className="hidden md:contents">
+            {NAV_ITEMS.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={linkClass}
+              >
+                {t(`nav:${item.key}`)}
+              </NavLink>
+            ))}
+          </div>
 
-          <div className="ml-auto flex items-center gap-2">
+          <MobileNav items={NAV_ITEMS} className="ml-auto md:hidden" />
+
+          <div className="ml-auto hidden items-center gap-2 md:flex">
             <LanguageSwitcher />
             {session ? (
               <Link

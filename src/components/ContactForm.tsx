@@ -94,7 +94,7 @@ export function ContactForm({ idPrefix = 'contact' }: { idPrefix?: string }) {
         <CardFooter>
           <Button
             variant="outline"
-            className="rounded-full px-5"
+            className="h-11 rounded-full px-5 md:h-8"
             onClick={() => setSent(false)}
           >
             {t('sendAnother')}
@@ -112,6 +112,7 @@ export function ContactForm({ idPrefix = 'contact' }: { idPrefix?: string }) {
             <Label htmlFor={fieldId('name')}>{t('name')}</Label>
             <Input
               id={fieldId('name')}
+              className="h-11 md:h-8"
               autoComplete="name"
               aria-invalid={Boolean(errors.name)}
               {...register('name')}
@@ -125,6 +126,7 @@ export function ContactForm({ idPrefix = 'contact' }: { idPrefix?: string }) {
             <Label htmlFor={fieldId('email')}>{t('email')}</Label>
             <Input
               id={fieldId('email')}
+              className="h-11 md:h-8"
               type="email"
               autoComplete="email"
               placeholder="you@example.com"
@@ -145,6 +147,7 @@ export function ContactForm({ idPrefix = 'contact' }: { idPrefix?: string }) {
             </Label>
             <Input
               id={fieldId('vin')}
+              className="h-11 md:h-8"
               placeholder="1HGCM82633A004352"
               aria-invalid={Boolean(errors.vin)}
               {...register('vin')}
@@ -179,7 +182,7 @@ export function ContactForm({ idPrefix = 'contact' }: { idPrefix?: string }) {
         <CardFooter className="mt-6">
           <Button
             type="submit"
-            className="shadow-soft rounded-full px-6"
+            className="shadow-soft h-11 rounded-full px-6 md:h-8"
             disabled={isSubmitting}
           >
             {isSubmitting && <Loader2 className="size-4 animate-spin" />}
