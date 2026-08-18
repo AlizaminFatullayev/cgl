@@ -102,9 +102,11 @@ export const en = {
     feeCarfax: 'Carfax Report',
 
     whyEyebrow: 'WHY CASPIAN GLOBAL LOGISTICS',
-    whyInsuredTitle: 'Fully Insured',
+    // TODO(translation): $3,000 coverage limit -- needs client review.
+    whyInsuredTitle: 'Insured up to $3,000',
+    // TODO(translation): $3,000 coverage limit -- needs client review.
     whyInsuredBody:
-      'Free insurance covers your car door-to-port — 0%, no extra fees.',
+      'Insurance is free up to $3,000 — your car is covered door-to-port.',
     whyAccountsTitle: 'Original IAAI & Copart Accounts',
     whyAccountsBody:
       'We hold verified dealer accounts at IAAI and Copart — bid directly, no middlemen.',
@@ -169,8 +171,9 @@ export const en = {
     loadingBody:
       'Container, RoRo, or consolidated loading at major US ports.',
     insuranceTitle: 'Cargo Insurance',
+    // TODO(translation): $3,000 coverage limit -- needs client review.
     insuranceBody:
-      'FREE all-risk coverage from yard to port — 0%, no extra fees.',
+      'Free all-risk coverage from yard to port, up to $3,000.',
     customsTitle: 'Customs & Docs',
     customsBody:
       'Title work, bill of lading, and destination customs support.',
@@ -182,7 +185,8 @@ export const en = {
     titleTail: 'one VIN at a time',
     p1: 'Caspian Global Logistics (CGL) is an officially registered LLC logistics company built on years of experience in vehicle import and strong international partnerships.',
     p2: 'Our goal is to provide our clients with transparent, reliable and comfortable vehicle import services. That is why we give our clients original auction accounts — protecting them from middlemen and extra risks, and ensuring maximum comfort during the auction process.',
-    p3: 'Our company offers vehicle import services with full guarantee, FREE insurance and competitive transport prices. There are no hidden or extra fees in the prices we offer.',
+    // TODO(translation): $3,000 coverage limit -- needs client review.
+    p3: 'Our company offers vehicle import services with full guarantee, free insurance up to $3,000 and competitive transport prices. There are no hidden or extra fees in the prices we offer.',
     p4: 'We sincerely thank all of our clients who trust us.',
     sincerely: 'Sincerely,',
     management: 'CGL Management',

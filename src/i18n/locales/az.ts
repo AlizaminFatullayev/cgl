@@ -109,9 +109,9 @@ export const az: Catalogue = {
     feeCarfax: 'Carfax hesabatı',
 
     whyEyebrow: 'NİYƏ CASPIAN GLOBAL LOGISTICS',
-    whyInsuredTitle: 'Tam sığortalı',
+    whyInsuredTitle: '3 000 $-a qədər sığortalı',
     whyInsuredBody:
-      'Pulsuz sığorta avtomobilinizi qapıdan limana qədər əhatə edir — 0%, əlavə haqq yoxdur.',
+      'Sığorta 3 000 $-a qədər pulsuzdur — avtomobiliniz qapıdan limana qədər əhatə olunur.',
     whyAccountsTitle: 'Orijinal IAAI və Copart hesabları',
     whyAccountsBody:
       'IAAI və Copart-da təsdiqlənmiş diler hesablarımız var — birbaşa təklif verin, vasitəçisiz.',
@@ -183,7 +183,7 @@ export const az: Catalogue = {
       'Əsas ABŞ limanlarında konteyner, RoRo və ya birləşdirilmiş yükləmə.',
     insuranceTitle: 'Yük sığortası',
     insuranceBody:
-      'Meydançadan limana PULSUZ tam risk əhatəsi — 0%, əlavə haqq yoxdur.',
+      'Meydançadan limana 3 000 $-a qədər pulsuz tam risk əhatəsi.',
     customsTitle: 'Gömrük və sənədlər',
     customsBody:
       'Mülkiyyət sənədi, konosament və təyinat gömrüyü üzrə dəstək.',
@@ -196,7 +196,7 @@ export const az: Catalogue = {
     titleTail: 'hər dəfə bir VIN',
     p1: 'Caspian Global Logistics (CGL) avtomobil idxalında illərin təcrübəsi və güclü beynəlxalq tərəfdaşlıqlar üzərində qurulmuş, rəsmi qeydiyyatdan keçmiş MMC logistika şirkətidir.',
     p2: 'Məqsədimiz müştərilərimizə şəffaf, etibarlı və rahat avtomobil idxalı xidməti göstərməkdir. Məhz buna görə müştərilərimizə orijinal hərrac hesabları veririk — bu, onları vasitəçilərdən və əlavə risklərdən qoruyur və hərrac prosesində maksimum rahatlıq təmin edir.',
-    p3: 'Şirkətimiz tam zəmanət, PULSUZ sığorta və rəqabətli daşınma qiymətləri ilə avtomobil idxalı xidməti təklif edir. Təklif etdiyimiz qiymətlərdə gizli və ya əlavə haqq yoxdur.',
+    p3: 'Şirkətimiz tam zəmanət, 3 000 $-a qədər pulsuz sığorta və rəqabətli daşınma qiymətləri ilə avtomobil idxalı xidməti təklif edir. Təklif etdiyimiz qiymətlərdə gizli və ya əlavə haqq yoxdur.',
     p4: 'Bizə etibar edən bütün müştərilərimizə səmimi təşəkkür edirik.',
     sincerely: 'Hörmətlə,',
     management: 'CGL rəhbərliyi',
