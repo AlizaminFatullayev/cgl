@@ -20,7 +20,7 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from '@/components/ui/combobox'
-import { matchesQuery } from '@/lib/search-match'
+import { matchesQuery, rankOptions } from '@/lib/search-match'
 import {
   Card,
   CardContent,
@@ -79,18 +79,31 @@ export function CalculatorPage() {
 
   const selectedBranch = branches.find((item) => item.branch === branch) ?? null
 
+  /*
+    Ranked by the CURRENT query before being handed to the combobox: Base UI
+    filters the `items` array in place, preserving its order, so the best
+    match comes first. The filter predicate itself (filterOption) is
+    unchanged -- only the order of what it returns differs.
+  */
   const stateItems: Option[] = useMemo(
     () =>
-      states.map((s) => ({
-        value: s.code,
-        label: `${s.name} (${s.code})`,
-        code: s.code,
-      })),
-    [states],
+      rankOptions(
+        states.map((s) => ({
+          value: s.code,
+          label: `${s.name} (${s.code})`,
+          code: s.code,
+        })),
+        stateQuery,
+      ),
+    [states, stateQuery],
   )
   const branchItems: Option[] = useMemo(
-    () => branches.map((b) => ({ value: b.branch, label: b.branch, code: '' })),
-    [branches],
+    () =>
+      rankOptions(
+        branches.map((b) => ({ value: b.branch, label: b.branch, code: '' })),
+        branchQuery,
+      ),
+    [branches, branchQuery],
   )
 
   const selectedStateItem =
