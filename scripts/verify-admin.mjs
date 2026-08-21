@@ -8,6 +8,14 @@
  * It proves the admin surface is closed to ordinary customers, using ONLY the
  * anon key and throwaway non-admin users -- exactly what a browser could do.
  *
+ * Since 0013 it also covers the customer EDIT boundary: 0013 opens an UPDATE
+ * path on vehicles so a customer can correct a car they added, and the last
+ * third of this file is the fence around that -- which columns survive an
+ * UPDATE, which survive an INSERT, and whose photos may be deleted. Those
+ * checks assert on the row read back out of the database, never on the error
+ * the API returned: a trigger rejection RAISEs, while an RLS rejection is
+ * silent (no error, zero rows), so the error alone would be a false signal.
+ *
  * PREREQUISITE: "Confirm email" must be OFF for this project
  * (Authentication -> Providers -> Email -> "Confirm email"). With it on,
  * signUp() returns no session, neither test user can sign in, and every
@@ -75,8 +83,11 @@ const victimEmail = `cgl-verify-admin-victim-${stamp}@${EMAIL_DOMAIN}`;
 const attackerEmail = `cgl-verify-admin-attacker-${stamp}@${EMAIL_DOMAIN}`;
 const password = "admin-check-password";
 
+/** The victim's VIN, read back at the end to prove the attacker never moved it. */
+const VICTIM_VIN = "VICTIMVIN0000001";
+
 /** Every assertion in this file, so an unreachable run can be scored honestly. */
-const TOTAL_CHECKS = 13;
+const TOTAL_CHECKS = 28;
 
 let passed = 0;
 let failed = 0;
@@ -248,9 +259,32 @@ async function main() {
 
   const { data: victimVehicle } = await supabase
     .from("vehicles")
-    .insert({ user_id: victimId, make: "Victim", model: "Sedan" })
+    .insert({
+      user_id: victimId,
+      make: "Victim",
+      model: "Sedan",
+      vin: VICTIM_VIN,
+    })
     .select()
     .maybeSingle();
+
+  /*
+    A photo row for the victim's vehicle, so the DELETE boundary has something
+    to try to delete. No storage object is uploaded: vehicle_photos.url holds a
+    path, and the row is what the RLS policy governs.
+  */
+  let victimPhoto = null;
+  if (victimVehicle) {
+    const { data } = await supabase
+      .from("vehicle_photos")
+      .insert({
+        vehicle_id: victimVehicle.id,
+        url: `${victimId}/${victimVehicle.id}/verify-probe.jpg`,
+      })
+      .select()
+      .maybeSingle();
+    victimPhoto = data;
+  }
 
   await supabase.auth.signOut();
 
@@ -488,7 +522,329 @@ async function main() {
     }
   }
 
+  // --- 9. the customer edit boundary (0013) --------------------------------
+  /*
+    0013 deliberately OPENS an UPDATE path for customers so they can correct a
+    car they added, and an INSERT path has always been open. Everything below
+    proves the fence around both.
+
+    Every assertion reads the row back out of the database afterwards. The two
+    rejection mechanisms look completely different from the client -- a trigger
+    RAISEs and PostgREST surfaces an error, while RLS blocks silently by
+    matching no rows and returning success -- so the returned error is not a
+    trustworthy signal. What is actually stored is.
+  */
+  console.log("\nCustomer edit boundary: UPDATE");
+
+  /** Reads one column straight back out of the database. */
+  const storedVehicle = async (id, columns) => {
+    const { data } = await supabase
+      .from("vehicles")
+      .select(columns)
+      .eq("id", id)
+      .maybeSingle();
+    return data;
+  };
+
+  const { data: ownVehicle } = await supabase
+    .from("vehicles")
+    .insert({
+      user_id: attackerId,
+      make: "Attacker",
+      model: "Editable",
+      vin: "ATTACKERVIN00001",
+    })
+    .select()
+    .maybeSingle();
+
+  if (!ownVehicle) {
+    // The fixture every UPDATE assertion needs. Without it they did not run,
+    // and an unrun check is a failure, not a pass.
+    for (const label of [
+      "own vehicle: vin CAN be corrected",
+      "own vehicle: status change does not land",
+      "own vehicle: paid change does not land",
+      "own vehicle: total_amount change does not land",
+      "own vehicle: auction_penalty change does not land",
+      "own vehicle: user_id change does not land",
+    ]) {
+      check(label, false, "the attacker's vehicle was never created");
+    }
+  } else {
+    // 9.1 the one thing a customer IS allowed to do.
+    await supabase
+      .from("vehicles")
+      .update({ vin: "CORRECTEDVIN0001" })
+      .eq("id", ownVehicle.id);
+    const afterVin = await storedVehicle(ownVehicle.id, "vin");
+    check(
+      "own vehicle: vin CAN be corrected",
+      afterVin?.vin === "CORRECTEDVIN0001",
+      `vin is ${afterVin?.vin}`,
+    );
+
+    // 9.2 - 9.5 the admin-owned columns, one statement each so a single
+    // rejection cannot mask the others.
+    /*
+      [column, what the attacker tries, what must still be stored].
+
+      Every attempted value DIFFERS from the value already in the row. That
+      matters: `is distinct from` is what the guard diffs on, so writing a
+      column's existing value back is a no-op the guard correctly ignores, and
+      a test that did that would pass without proving anything.
+    */
+    const blocked = [
+      ["status", "Delivered", "At Auction"],
+      ["paid", 999999, 0],
+      ["total_amount", 0.01, 0],
+      ["auction_penalty", 999, 0],
+    ];
+
+    for (const [column, attempt, expected] of blocked) {
+      const { error } = await supabase
+        .from("vehicles")
+        .update({ [column]: attempt })
+        .eq("id", ownVehicle.id);
+
+      const after = await storedVehicle(ownVehicle.id, column);
+      const stored = after?.[column];
+      // status is text, the rest are numeric -- compare each in its own type
+      // rather than forcing both through Number(), where "At Auction" would
+      // become NaN and NaN === NaN is false.
+      const unchanged =
+        typeof expected === "number"
+          ? Number(stored) === expected
+          : stored === expected;
+
+      check(
+        `own vehicle: ${column} change does not land`,
+        Boolean(after) && unchanged,
+        `${column} is now ${stored}${error ? ` (db said: ${error.code})` : " (no error returned)"}`,
+      );
+    }
+
+    // 9.6 re-filing the car under someone else.
+    {
+      const { error } = await supabase
+        .from("vehicles")
+        .update({ user_id: victimId })
+        .eq("id", ownVehicle.id);
+
+      const after = await storedVehicle(ownVehicle.id, "user_id");
+      check(
+        "own vehicle: user_id change does not land",
+        after?.user_id === attackerId,
+        `user_id is now ${after?.user_id}${error ? ` (db said: ${error.code})` : " (no error returned)"}`,
+      );
+    }
+  }
+
+  // 9.7 another customer's vehicle. RLS filters the UPDATE to zero rows, so
+  // there is no error and nothing to read back as this user -- the victim
+  // re-check at the end is what proves the VIN never moved.
+  if (victimVehicle) {
+    const { data: touched } = await supabase
+      .from("vehicles")
+      .update({ vin: "STOLENVIN0000001" })
+      .eq("id", victimVehicle.id)
+      .select();
+    check(
+      "another customer's vehicle: vin update touches zero rows",
+      (touched?.length ?? 0) === 0,
+      `returned ${touched?.length} row(s)`,
+    );
+  } else {
+    check(
+      "another customer's vehicle: vin update touches zero rows",
+      false,
+      "the victim's vehicle was never created, so the check could not run",
+    );
+  }
+
+  // --- 10. the INSERT side --------------------------------------------------
+  /*
+    The Add Vehicle form is where a customer types, so this is where a customer
+    could otherwise plant total_amount = 0 and show themselves no debt. The
+    guard IGNORES admin-owned columns rather than rejecting the insert, so each
+    check below asserts on the STORED row, never on the absence of an error.
+  */
+  console.log("\nCustomer edit boundary: INSERT");
+  {
+    const { data: plain, error: plainError } = await supabase
+      .from("vehicles")
+      .insert({ user_id: attackerId, make: "Attacker", model: "Plain" })
+      .select()
+      .maybeSingle();
+    check(
+      "insert with ordinary fields is allowed",
+      Boolean(plain) && !plainError,
+      plainError?.message ?? "insert returned no row",
+    );
+
+    const { data: loaded } = await supabase
+      .from("vehicles")
+      .insert({
+        user_id: attackerId,
+        make: "Attacker",
+        model: "Loaded",
+        total_amount: 0,
+        paid: 999999,
+        status: "Delivered",
+        auction_penalty: 0,
+        final_price: 1,
+        location: "Out",
+        expected_opening_date: "2020-01-01",
+      })
+      .select()
+      .maybeSingle();
+
+    if (!loaded) {
+      for (const label of [
+        "insert cannot set total_amount",
+        "insert cannot set status",
+        "insert cannot set the other admin-owned columns",
+      ]) {
+        check(label, false, "the loaded insert returned no row at all");
+      }
+    } else {
+      const stored = await storedVehicle(
+        loaded.id,
+        "total_amount, paid, status, auction_penalty, final_price, location, expected_opening_date",
+      );
+
+      // A customer-supplied total_amount of 0 must not survive as 0 "by
+      // accident" -- 0 is also the column default, so this asserts the paid
+      // column alongside it, where the attempt (999999) differs from the
+      // default and the two outcomes are distinguishable.
+      check(
+        "insert cannot set total_amount",
+        Number(stored?.total_amount) === 0 && Number(stored?.paid) === 0,
+        `total_amount is ${stored?.total_amount}, paid is ${stored?.paid}`,
+      );
+
+      check(
+        "insert cannot set status",
+        stored?.status === "At Auction",
+        `status is ${stored?.status}`,
+      );
+
+      check(
+        "insert cannot set the other admin-owned columns",
+        Number(stored?.auction_penalty) === 0 &&
+          stored?.final_price === null &&
+          stored?.location === null &&
+          stored?.expected_opening_date === null,
+        `auction_penalty=${stored?.auction_penalty}, final_price=${stored?.final_price}, ` +
+          `location=${stored?.location}, expected_opening_date=${stored?.expected_opening_date}`,
+      );
+    }
+  }
+
+  // --- 11. photo removal ----------------------------------------------------
+  console.log("\nCustomer edit boundary: photo DELETE");
+  {
+    let ownPhoto = null;
+    if (ownVehicle) {
+      const { data } = await supabase
+        .from("vehicle_photos")
+        .insert({
+          vehicle_id: ownVehicle.id,
+          url: `${attackerId}/${ownVehicle.id}/verify-probe.jpg`,
+        })
+        .select()
+        .maybeSingle();
+      ownPhoto = data;
+    }
+
+    if (!ownPhoto) {
+      check(
+        "own vehicle's photo CAN be removed",
+        false,
+        "the attacker's photo row was never created",
+      );
+    } else {
+      await supabase.from("vehicle_photos").delete().eq("id", ownPhoto.id);
+      const { data: after } = await supabase
+        .from("vehicle_photos")
+        .select("id")
+        .eq("id", ownPhoto.id);
+      check(
+        "own vehicle's photo CAN be removed",
+        (after?.length ?? 0) === 0,
+        `the row is still there (${after?.length})`,
+      );
+    }
+
+    if (victimPhoto) {
+      const { data: deleted } = await supabase
+        .from("vehicle_photos")
+        .delete()
+        .eq("id", victimPhoto.id)
+        .select();
+      check(
+        "another customer's photo: delete touches zero rows",
+        (deleted?.length ?? 0) === 0,
+        `deleted ${deleted?.length} row(s)`,
+      );
+    } else {
+      check(
+        "another customer's photo: delete touches zero rows",
+        false,
+        "the victim's photo row was never created, so the check could not run",
+      );
+    }
+  }
+
   await supabase.auth.signOut();
+
+  // --- 12. read the victim's side of it -------------------------------------
+  /*
+    The two "zero rows" assertions above are made from the attacker's session,
+    where the victim's rows are invisible either way. Signing back in as the
+    victim is the only way to assert on what is actually stored rather than on
+    what the attacker was allowed to see.
+  */
+  console.log("\nVerified from the victim's own session");
+  {
+    const { data: victimBack, error: signInError } =
+      await supabase.auth.signInWithPassword({ email: victimEmail, password });
+
+    if (signInError || !victimBack?.session) {
+      check(
+        "the victim's vin is untouched in the database",
+        false,
+        `could not sign back in as the victim: ${signInError?.message}`,
+      );
+      check(
+        "the victim's photo row still exists in the database",
+        false,
+        `could not sign back in as the victim: ${signInError?.message}`,
+      );
+    } else {
+      const { data: vin } = await supabase
+        .from("vehicles")
+        .select("vin")
+        .eq("id", victimVehicle?.id ?? "")
+        .maybeSingle();
+      check(
+        "the victim's vin is untouched in the database",
+        vin?.vin === VICTIM_VIN,
+        `vin is ${vin?.vin}, expected ${VICTIM_VIN}`,
+      );
+
+      const { data: photo } = await supabase
+        .from("vehicle_photos")
+        .select("id")
+        .eq("id", victimPhoto?.id ?? "");
+      check(
+        "the victim's photo row still exists in the database",
+        (photo?.length ?? 0) === 1,
+        `found ${photo?.length} row(s)`,
+      );
+
+      await supabase.auth.signOut();
+    }
+  }
 }
 
 let crashed = null;

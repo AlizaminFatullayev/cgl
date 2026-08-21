@@ -353,6 +353,123 @@ export const en = {
       'The vehicle was not saved. Your account may not have permission to add vehicles — please contact support.',
     warnPhotos:
       'The vehicle was saved, but some photos did not attach: {{errors}}',
+
+    editTitle: 'Edit vehicle',
+    editSubtitle:
+      'Correct the details you entered. Status, amounts and anything our staff manage are read-only — contact us if one of those is wrong.',
+    adminManagedField: 'Managed by our staff.',
+    loadingVehicle: 'Loading the vehicle…',
+    errLoadVehicle: 'Could not load the vehicle: {{error}}',
+    errVehicleNotFound:
+      'That vehicle was not found on your account. It may have been removed.',
+    errUpdate: 'Could not save your changes: {{error}}',
+    errNotUpdated:
+      'Your changes were not saved. The database rejected the update — reload and try again, or contact support.',
+    currentPhotos: 'Current photos',
+    photoRemoveExisting: 'Remove',
+    photoUndoRemove: 'Keep',
+    photoRemovePending_one: '{{count}} photo will be removed when you save.',
+    photoRemovePending_other: '{{count}} photos will be removed when you save.',
+    errPhotoRemoveBlocked:
+      'The photos could not be removed. Your account may not have permission.',
+    warnPhotoRemove:
+      'Your changes were saved, but the photos could not be removed: {{error}}',
+  },
+
+  /**
+   * The My Cars page at /invoices.
+   *
+   * `location.*` keys are the exact values stored in vehicles.location and are
+   * display labels only -- see i18n/labels.ts.
+   */
+  cars: {
+    title: 'My cars',
+    subtitle: 'Every vehicle on your account, with its full file.',
+    loading: 'Loading your cars…',
+    loadError: 'Could not load your cars: {{error}}',
+    empty: 'You have no vehicles yet.',
+    noMatch: 'No vehicles are in this location.',
+    countLabel: '{{shown}} of {{total}} vehicles',
+
+    locationFilter: 'Location',
+    locationAll: 'All',
+    location: {
+      Auction: 'Auction',
+      Warehouse: 'Warehouse',
+      Container: 'Container',
+      Parking: 'Parking',
+      Out: 'Out',
+    },
+
+    colId: 'ID',
+    colRegistered: 'Car registration date',
+    colAuctionDate: 'Auction date',
+    colVin: 'Vin',
+    colLot: 'Lot',
+    colCar: 'Car',
+    colDebt: 'Debt',
+    colPenalty: 'Auction penalty',
+    colStatus: 'Vehicle status',
+    colOpening: 'Expected opening date',
+    colImage: 'Image',
+    colActions: 'Actions',
+
+    details: 'Details',
+    hideDetails: 'Hide details',
+    detailsFor: 'Details for {{car}}',
+    openGallery: 'Open the photo gallery',
+    galleryTitle: 'Vehicle image gallery',
+
+    cardCar: 'Car information',
+    cardAuction: 'Auction information',
+    cardTransport: 'Transportation information',
+
+    car: 'Car',
+    finalPrice: 'Final price',
+    client: 'Client',
+    personalNumber: 'Personal number',
+    auction: 'Auction',
+    state: 'State',
+    city: 'City',
+    loadingPort: 'Loading port',
+    carrier: 'Carrier',
+    auctionPickupDate: 'Auction pickup date',
+    warehouseDeliveryDate: 'Warehouse delivery date',
+    departureDate: 'Departure date',
+    entryDate: 'Entry date',
+    containerNumber: 'Container number',
+    openDate: 'Open date',
+    seaLine: 'Sea line',
+    terminal: 'Terminal',
+    releaseDate: 'Release date',
+  },
+
+  /** Strings for the full-screen photo viewer and the galleries that open it. */
+  photos: {
+    /** Keys are the stored vehicle_photos.category values. Display only. */
+    category: {
+      auction: 'Auction',
+      stock: 'Stock',
+      driver: 'Driver',
+      poti: 'Poti',
+    },
+    categoryEmpty: 'No photos',
+    changeCategory: 'Move photo {{index}} to another category',
+    viewerTitle: 'Photos of {{vehicle}}',
+    openViewer: 'Open photo {{index}} of {{total}}',
+    photoAlt: '{{vehicle}} — photo {{index}} of {{total}}',
+    counter: '{{index}} / {{total}}',
+    previous: 'Previous photo',
+    next: 'Next photo',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    resetZoom: 'Reset zoom',
+    close: 'Close viewer',
+    loading: 'Loading photos…',
+    none: 'No photos yet.',
+    loadFailed:
+      'This photo could not be loaded. The link may have expired — try again.',
+    retry: 'Try again',
   },
 } as const
 

@@ -3,11 +3,13 @@ import { Images, Loader2, Pencil, Search } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { callRpc } from '@/lib/admin-rpc'
 import { updateRowById } from '@/lib/admin-writes'
-import { signPhotoUrl } from '@/lib/storage'
+import { VehicleGallery } from '@/components/VehicleGallery'
 import { displayText, formatCurrency, vehicleTitle } from '@/lib/format'
 import {
+  VEHICLE_LOCATIONS,
   VEHICLE_STATUSES,
   type AdminCustomer,
+  type PhotoCategory,
   type Vehicle,
   type VehiclePhoto,
   type VehicleStatus,
@@ -42,28 +44,139 @@ import {
 } from '@/components/ui/dialog'
 
 const ANY = '__any__'
+/** Select cannot hold null, so "no location set" needs a sentinel value. */
+const NO_LOCATION = '__none__'
 
-/** Editable shipping fields. status is handled separately, inline. */
-interface EditableFields {
-  container_number: string
-  booking_number: string
-  receiver: string
-  shipping_line: string
-  notes: string
-  total_amount: string
-  paid: string
+/*
+  The vehicle file, as one declarative list.
+
+  Grouped to match the three cards the customer sees on My Cars, in the same
+  order, so a member of staff filling this in and a customer reading it are
+  looking at the same document. Adding a column here is a one-line change in the
+  group it belongs to -- there is no second place to update.
+
+  Money is kept apart from text because it needs validating, and dates because
+  <input type="date"> speaks exactly the YYYY-MM-DD that a Postgres `date`
+  column returns, so both directions are a straight assignment.
+*/
+const TEXT_FIELDS = [
+  'container_number',
+  'booking_number',
+  'receiver',
+  'shipping_line',
+  'auction_house',
+  'auction_state',
+  'auction_city',
+  'loading_port',
+  'carrier',
+  'terminal',
+  'notes',
+] as const
+
+const DATE_FIELDS = [
+  'auction_date',
+  'expected_opening_date',
+  'auction_pickup_date',
+  'warehouse_delivery_date',
+  'departure_date',
+  'entry_date',
+  'open_date',
+  'release_date',
+] as const
+
+/** NOT NULL columns fall back to 0; final_price is nullable and stays null. */
+const MONEY_FIELDS = [
+  'total_amount',
+  'paid',
+  'auction_penalty',
+  'final_price',
+] as const
+
+const NULLABLE_MONEY = new Set<string>(['final_price'])
+
+type EditableKey =
+  | (typeof TEXT_FIELDS)[number]
+  | (typeof DATE_FIELDS)[number]
+  | (typeof MONEY_FIELDS)[number]
+  | 'location'
+
+type EditableFields = Record<EditableKey, string>
+
+type FieldKind = 'text' | 'date' | 'money' | 'location' | 'notes'
+
+interface FieldSpec {
+  key: EditableKey
+  label: string
+  kind: FieldKind
 }
 
+const FIELD_GROUPS: { heading: string; fields: FieldSpec[] }[] = [
+  {
+    heading: 'Car information',
+    fields: [
+      { key: 'total_amount', label: 'Total amount (USD)', kind: 'money' },
+      { key: 'paid', label: 'Paid (USD)', kind: 'money' },
+      { key: 'final_price', label: 'Final price (USD)', kind: 'money' },
+      { key: 'auction_penalty', label: 'Auction penalty (USD)', kind: 'money' },
+    ],
+  },
+  {
+    heading: 'Auction information',
+    fields: [
+      { key: 'auction_date', label: 'Auction date', kind: 'date' },
+      { key: 'auction_house', label: 'Auction (IAAI, Copart…)', kind: 'text' },
+      { key: 'auction_state', label: 'State', kind: 'text' },
+      { key: 'auction_city', label: 'City', kind: 'text' },
+    ],
+  },
+  {
+    heading: 'Transportation information',
+    fields: [
+      { key: 'loading_port', label: 'Loading port', kind: 'text' },
+      { key: 'carrier', label: 'Carrier', kind: 'text' },
+      { key: 'auction_pickup_date', label: 'Auction pickup date', kind: 'date' },
+      {
+        key: 'warehouse_delivery_date',
+        label: 'Warehouse delivery date',
+        kind: 'date',
+      },
+      { key: 'departure_date', label: 'Departure date', kind: 'date' },
+      { key: 'entry_date', label: 'Entry date', kind: 'date' },
+      { key: 'container_number', label: 'Container number', kind: 'text' },
+      { key: 'open_date', label: 'Open date', kind: 'date' },
+      { key: 'shipping_line', label: 'Sea line', kind: 'text' },
+      { key: 'terminal', label: 'Terminal', kind: 'text' },
+      { key: 'release_date', label: 'Release date', kind: 'date' },
+      { key: 'booking_number', label: 'Booking number', kind: 'text' },
+      { key: 'receiver', label: 'Receiver', kind: 'text' },
+    ],
+  },
+  {
+    heading: 'Location and opening',
+    fields: [
+      { key: 'location', label: 'Location', kind: 'location' },
+      {
+        key: 'expected_opening_date',
+        label: 'Expected opening date',
+        kind: 'date',
+      },
+      { key: 'notes', label: 'Notes', kind: 'notes' },
+    ],
+  },
+]
+
 function toEditable(vehicle: Vehicle): EditableFields {
-  return {
-    container_number: vehicle.container_number ?? '',
-    booking_number: vehicle.booking_number ?? '',
-    receiver: vehicle.receiver ?? '',
-    shipping_line: vehicle.shipping_line ?? '',
-    notes: vehicle.notes ?? '',
-    total_amount: vehicle.total_amount === null ? '' : String(vehicle.total_amount),
-    paid: vehicle.paid === null ? '' : String(vehicle.paid),
+  const fields = {} as EditableFields
+
+  for (const key of TEXT_FIELDS) fields[key] = vehicle[key] ?? ''
+  for (const key of DATE_FIELDS) fields[key] = vehicle[key] ?? ''
+  for (const key of MONEY_FIELDS) {
+    const value = vehicle[key]
+    fields[key] = value === null || value === undefined ? '' : String(value)
   }
+  fields.location = vehicle.location ?? NO_LOCATION
+
+  return fields
 }
 
 function nullIfBlank(value: string): string | null {
@@ -90,7 +203,14 @@ export function AdminVehiclesPage() {
   const [editSaving, setEditSaving] = useState(false)
 
   const [photoVehicle, setPhotoVehicle] = useState<Vehicle | null>(null)
-  const [photoUrls, setPhotoUrls] = useState<string[] | null>(null)
+  /*
+    Whole rows, not just paths: the gallery groups by category and lets staff
+    re-file a photo. Signing stays VehicleGallery's job, through the one shared
+    hook -- so a thumbnail and its full-size view are the same signed URL rather
+    than two with separate expiry clocks.
+  */
+  const [photoRows, setPhotoRows] = useState<VehiclePhoto[] | null>(null)
+  const [savingPhotoId, setSavingPhotoId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -203,32 +323,37 @@ export function AdminVehiclesPage() {
     if (!editing || !editFields) return
     setEditError(null)
 
-    const totalRaw = editFields.total_amount.trim()
-    const paidRaw = editFields.paid.trim()
-    if (totalRaw !== '' && (Number.isNaN(Number(totalRaw)) || Number(totalRaw) < 0)) {
-      setEditError('Total amount must be a non-negative number.')
-      return
+    const patch: Record<string, unknown> = {}
+
+    for (const key of TEXT_FIELDS) patch[key] = nullIfBlank(editFields[key])
+    // A blank date is a real "not known yet", so it clears the column.
+    for (const key of DATE_FIELDS) patch[key] = nullIfBlank(editFields[key])
+
+    for (const key of MONEY_FIELDS) {
+      const raw = editFields[key].trim()
+      if (raw !== '' && (Number.isNaN(Number(raw)) || Number(raw) < 0)) {
+        const label = FIELD_GROUPS.flatMap((group) => group.fields).find(
+          (field) => field.key === key,
+        )?.label
+        setEditError(`${label ?? key} must be a non-negative number.`)
+        return
+      }
+      /*
+        Sent as a STRING so Postgres parses it straight into numeric instead of
+        round-tripping through a JS float. Blank means zero on the NOT NULL
+        columns and null on final_price, which is genuinely optional.
+      */
+      patch[key] = raw === '' ? (NULLABLE_MONEY.has(key) ? null : '0') : raw
     }
-    if (paidRaw !== '' && (Number.isNaN(Number(paidRaw)) || Number(paidRaw) < 0)) {
-      setEditError('Paid must be a non-negative number.')
-      return
-    }
+
+    patch.location =
+      editFields.location === NO_LOCATION ? null : editFields.location
 
     setEditSaving(true)
     const { data, error: updateError } = await updateRowById<Vehicle>(
       'vehicles',
       editing.id,
-      {
-        container_number: nullIfBlank(editFields.container_number),
-        booking_number: nullIfBlank(editFields.booking_number),
-        receiver: nullIfBlank(editFields.receiver),
-        shipping_line: nullIfBlank(editFields.shipping_line),
-        notes: nullIfBlank(editFields.notes),
-        // Sent as strings so Postgres parses them straight into numeric
-        // instead of round-tripping through a JS float.
-        total_amount: totalRaw === '' ? 0 : totalRaw,
-        paid: paidRaw === '' ? 0 : paidRaw,
-      },
+      patch,
     )
     setEditSaving(false)
 
@@ -246,24 +371,47 @@ export function AdminVehiclesPage() {
 
   const openPhotos = async (vehicle: Vehicle) => {
     setPhotoVehicle(vehicle)
-    setPhotoUrls(null)
+    setPhotoRows(null)
 
     const { data, error: photoError } = await supabase
       .from('vehicle_photos')
-      .select('id, vehicle_id, url, created_at')
+      .select('id, vehicle_id, url, created_at, category')
       .eq('vehicle_id', vehicle.id)
       .order('created_at', { ascending: true })
       .returns<VehiclePhoto[]>()
 
-    if (photoError) {
-      setPhotoUrls([])
+    setPhotoRows(photoError ? [] : (data ?? []))
+  }
+
+  /**
+   * Files a photo under a different gallery column.
+   *
+   * vehicle_photos UPDATE is admin-only in RLS, so this is the only surface in
+   * the app that can write the column. The row is updated optimistically only
+   * AFTER the database confirms it, from the row the database sent back.
+   */
+  const changeCategory = async (photoId: string, category: PhotoCategory) => {
+    setWriteError(null)
+    setSavingPhotoId(photoId)
+
+    const { data, error: updateError } = await updateRowById<VehiclePhoto>(
+      'vehicle_photos',
+      photoId,
+      { category },
+    )
+
+    setSavingPhotoId(null)
+
+    if (updateError || !data) {
+      setWriteError(updateError ?? 'The photo category was not changed.')
       return
     }
 
-    const signed = await Promise.all(
-      (data ?? []).map((photo) => signPhotoUrl(photo.url)),
+    setPhotoRows((current) =>
+      current === null
+        ? current
+        : current.map((row) => (row.id === data.id ? data : row)),
     )
-    setPhotoUrls(signed.filter((url): url is string => url !== null))
   }
 
   const statusItems = [
@@ -278,6 +426,14 @@ export function AdminVehiclesPage() {
     })),
   ]
   const rowStatusItems = VEHICLE_STATUSES.map((s) => ({ value: s, label: s }))
+  /*
+    Stored English values, never a translated label -- vehicles_location_check
+    constrains the column to exactly these strings.
+  */
+  const locationItems = [
+    { value: NO_LOCATION, label: 'Not set' },
+    ...VEHICLE_LOCATIONS.map((value) => ({ value, label: value })),
+  ]
 
   return (
     <div className="space-y-6">
@@ -469,69 +625,81 @@ export function AdminVehiclesPage() {
           </DialogHeader>
 
           {editFields && (
-            <div className="space-y-4">
-              {(
-                [
-                  ['container_number', 'Container number'],
-                  ['booking_number', 'Booking number'],
-                  ['receiver', 'Receiver'],
-                  ['shipping_line', 'Shipping line'],
-                ] as const
-              ).map(([field, label]) => (
-                <div key={field} className="space-y-2">
-                  <Label htmlFor={field}>{label}</Label>
-                  <Input
-                    id={field}
-                    value={editFields[field]}
-                    onChange={(event) =>
-                      setEditFields({
-                        ...editFields,
-                        [field]: event.target.value,
-                      })
-                    }
-                  />
-                </div>
+            <div className="space-y-6">
+              {FIELD_GROUPS.map((group) => (
+                <section key={group.heading} className="space-y-3">
+                  <h3 className="border-primary text-primary border-b-2 pb-1.5 text-sm font-semibold">
+                    {group.heading}
+                  </h3>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {group.fields.map((field) => {
+                      const value = editFields[field.key]
+                      const set = (next: string) =>
+                        setEditFields({ ...editFields, [field.key]: next })
+
+                      if (field.kind === 'notes') {
+                        return (
+                          <div
+                            key={field.key}
+                            className="space-y-2 sm:col-span-2"
+                          >
+                            <Label htmlFor={field.key}>{field.label}</Label>
+                            <Textarea
+                              id={field.key}
+                              rows={4}
+                              value={value}
+                              onChange={(event) => set(event.target.value)}
+                            />
+                          </div>
+                        )
+                      }
+
+                      if (field.kind === 'location') {
+                        return (
+                          <div key={field.key} className="space-y-2">
+                            <Label htmlFor={field.key}>{field.label}</Label>
+                            <Select
+                              items={locationItems}
+                              value={value}
+                              onValueChange={(next) => next && set(next)}
+                            >
+                              <SelectTrigger id={field.key} className="w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {locationItems.map((item) => (
+                                  <SelectItem
+                                    key={item.value}
+                                    value={item.value}
+                                  >
+                                    {item.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )
+                      }
+
+                      return (
+                        <div key={field.key} className="space-y-2">
+                          <Label htmlFor={field.key}>{field.label}</Label>
+                          <Input
+                            id={field.key}
+                            type={field.kind === 'date' ? 'date' : 'text'}
+                            inputMode={
+                              field.kind === 'money' ? 'decimal' : undefined
+                            }
+                            value={value}
+                            onChange={(event) => set(event.target.value)}
+                          />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </section>
               ))}
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="total_amount">Total amount (USD)</Label>
-                  <Input
-                    id="total_amount"
-                    inputMode="decimal"
-                    value={editFields.total_amount}
-                    onChange={(event) =>
-                      setEditFields({
-                        ...editFields,
-                        total_amount: event.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="paid">Paid (USD)</Label>
-                  <Input
-                    id="paid"
-                    inputMode="decimal"
-                    value={editFields.paid}
-                    onChange={(event) =>
-                      setEditFields({ ...editFields, paid: event.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  rows={4}
-                  value={editFields.notes}
-                  onChange={(event) =>
-                    setEditFields({ ...editFields, notes: event.target.value })
-                  }
-                />
-              </div>
 
               {editError && <AdminError message={editError} />}
             </div>
@@ -561,41 +729,36 @@ export function AdminVehiclesPage() {
         onOpenChange={(open) => {
           if (!open) {
             setPhotoVehicle(null)
-            setPhotoUrls(null)
+            setPhotoRows(null)
           }
         }}
       >
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>
               {photoVehicle ? vehicleTitle(photoVehicle) : 'Photos'}
             </DialogTitle>
             <DialogDescription>
-              Photos uploaded by the customer.
+              Photos uploaded by the customer. Use the picker under a photo to
+              move it into another gallery column.
             </DialogDescription>
           </DialogHeader>
 
-          {photoUrls === null ? (
+          {photoRows === null ? (
             <div className="flex items-center gap-2 py-8">
               <Loader2 className="text-muted-foreground size-5 animate-spin" />
               <span className="text-muted-foreground">Loading photos…</span>
             </div>
-          ) : photoUrls.length === 0 ? (
-            <p className="text-muted-foreground py-8 text-center text-sm">
-              No photos for this vehicle.
-            </p>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {photoUrls.map((url, index) => (
-                <img
-                  key={url}
-                  src={url}
-                  alt={`${photoVehicle ? vehicleTitle(photoVehicle) : 'Vehicle'} — photo ${index + 1} of ${photoUrls.length}`}
-                  className="border-border/60 shadow-soft w-full rounded-xl border object-cover"
-                  loading="lazy"
-                />
-              ))}
-            </div>
+            // Every thumbnail opens the full-screen viewer at that photo.
+            <VehicleGallery
+              photos={photoRows}
+              title={photoVehicle ? vehicleTitle(photoVehicle) : 'Vehicle'}
+              onCategoryChange={(photoId, category) =>
+                void changeCategory(photoId, category)
+              }
+              savingPhotoId={savingPhotoId}
+            />
           )}
         </DialogContent>
       </Dialog>

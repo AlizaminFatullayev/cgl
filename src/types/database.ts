@@ -17,6 +17,35 @@ export const VEHICLE_STATUSES = [
 
 export type VehicleStatus = (typeof VEHICLE_STATUSES)[number]
 
+/**
+ * Where the car physically is. Added in 0013.
+ *
+ * This is NOT vehicles.status and the two must never be conflated: status is
+ * the shipping lifecycle, location is the filter axis on the My Cars page.
+ * Like status, these are the exact values stored in the column (a CHECK
+ * constraint enforces them) -- translate for display only, never in a query.
+ */
+export const VEHICLE_LOCATIONS = [
+  'Auction',
+  'Warehouse',
+  'Container',
+  'Parking',
+  'Out',
+] as const
+
+export type VehicleLocation = (typeof VEHICLE_LOCATIONS)[number]
+
+/**
+ * Gallery column a photo files under. Added in 0013.
+ *
+ * Lowercase English keys, CHECK-constrained, NOT NULL DEFAULT 'auction' -- so
+ * a photo row can never be uncategorised, and every row that existed before
+ * 0013 was backfilled to 'auction'.
+ */
+export const PHOTO_CATEGORIES = ['auction', 'stock', 'driver', 'poti'] as const
+
+export type PhotoCategory = (typeof PHOTO_CATEGORIES)[number]
+
 export interface Profile {
   id: string
   full_name: string | null
@@ -24,6 +53,8 @@ export interface Profile {
   role: UserRole
   created_at: string
   updated_at: string
+  /** Added in 0013. Identity data our staff verify -- admin-writable only. */
+  personal_number: string | null
 }
 
 export interface Vehicle {
@@ -43,6 +74,37 @@ export interface Vehicle {
   paid: number
   notes: string | null
   created_at: string
+
+  /*
+    Added in 0013. All admin-writable only: the customer edit path
+    (guard_customer_vehicle_columns) whitelists none of them, and the insert
+    path (guard_customer_vehicle_insert) resets them to their defaults.
+
+    `debt` is deliberately absent -- it is total_amount - paid, computed at
+    render time by vehicleDebt(). Storing it would let the two drift apart.
+  */
+
+  /** Short human-facing number, GENERATED ALWAYS. Display only, never a key. */
+  ref_no: number
+  location: VehicleLocation | null
+  auction_penalty: number
+  final_price: number | null
+
+  auction_date: string | null
+  auction_house: string | null
+  auction_state: string | null
+  auction_city: string | null
+
+  loading_port: string | null
+  carrier: string | null
+  terminal: string | null
+  auction_pickup_date: string | null
+  warehouse_delivery_date: string | null
+  departure_date: string | null
+  entry_date: string | null
+  open_date: string | null
+  release_date: string | null
+  expected_opening_date: string | null
 }
 
 export interface VehiclePhoto {
@@ -50,6 +112,8 @@ export interface VehiclePhoto {
   vehicle_id: string | null
   url: string | null
   created_at: string
+  /** Added in 0013. NOT NULL DEFAULT 'auction', so it is never absent. */
+  category: PhotoCategory
 }
 
 export interface Invoice {

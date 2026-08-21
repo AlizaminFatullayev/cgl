@@ -48,7 +48,7 @@ export function VehiclesPage() {
 
     const { data: photoRows, error: photoError } = await supabase
       .from('vehicle_photos')
-      .select('id, vehicle_id, url, created_at')
+      .select('id, vehicle_id, url, created_at, category')
       .in(
         'vehicle_id',
         rows.map((row) => row.id),

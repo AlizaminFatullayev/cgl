@@ -107,6 +107,15 @@ export async function uploadVehiclePhoto(
 }
 
 /**
+ * How long a signed photo URL stays valid.
+ *
+ * This was already the implicit default of signPhotoUrl(); it is named here so
+ * the refresh timer in use-signed-photos.ts can be derived from it rather than
+ * from a second hard-coded hour that could drift out of step.
+ */
+export const PHOTO_URL_TTL_SECONDS = 3600
+
+/**
  * Turns a stored path into a temporary viewable URL.
  *
  * The bucket is private, so there is no permanent public URL. Returns null
@@ -115,7 +124,7 @@ export async function uploadVehiclePhoto(
  */
 export async function signPhotoUrl(
   path: string | null,
-  expiresInSeconds = 3600,
+  expiresInSeconds = PHOTO_URL_TTL_SECONDS,
 ): Promise<string | null> {
   if (!path) return null
   const { data, error } = await supabase.storage
@@ -123,4 +132,47 @@ export async function signPhotoUrl(
     .createSignedUrl(path, expiresInSeconds)
   if (error) return null
   return data?.signedUrl ?? null
+}
+
+/**
+ * Signs a whole list of paths in ONE request, preserving order.
+ *
+ * Why this exists: the thumbnail and the full-size photo in the viewer must be
+ * the same URL. Signing them separately would mean two round trips per photo
+ * and two independent expiry clocks for the same image. A list of ten photos
+ * used to be ten createSignedUrl() calls; it is now one.
+ *
+ * A path that cannot be signed comes back as null in its own slot rather than
+ * collapsing the list, so indexes stay aligned with the caller's paths array.
+ */
+export async function signPhotoUrls(
+  paths: readonly string[],
+  expiresInSeconds = PHOTO_URL_TTL_SECONDS,
+): Promise<(string | null)[]> {
+  if (paths.length === 0) return []
+
+  const { data, error } = await supabase.storage
+    .from(VEHICLE_PHOTOS_BUCKET)
+    .createSignedUrls([...paths], expiresInSeconds)
+
+  if (error || !data) return paths.map(() => null)
+
+  // createSignedUrls does not promise input order, so match on path. Supabase
+  // returns the requested path back on each row.
+  const byPath = new Map<string, string | null>()
+  for (const row of data) {
+    if (row.path) byPath.set(row.path, row.signedUrl ?? null)
+  }
+  return paths.map((path) => byPath.get(path) ?? null)
+}
+
+/** Deletes photo objects from the bucket. Returns an error message, or null. */
+export async function removeVehiclePhotos(
+  paths: readonly string[],
+): Promise<string | null> {
+  if (paths.length === 0) return null
+  const { error } = await supabase.storage
+    .from(VEHICLE_PHOTOS_BUCKET)
+    .remove([...paths])
+  return error ? error.message : null
 }

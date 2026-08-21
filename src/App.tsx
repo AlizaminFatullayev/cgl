@@ -18,7 +18,8 @@ import { CalculatorPage } from '@/pages/public/CalculatorPage'
 import { TrackingPage } from '@/pages/public/TrackingPage'
 import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 import { VehiclesPage } from '@/pages/dashboard/VehiclesPage'
-import { AddVehiclePage } from '@/pages/dashboard/AddVehiclePage'
+import { VehicleFormPage } from '@/pages/dashboard/VehicleFormPage'
+import { MyCarsPage } from '@/pages/dashboard/MyCarsPage'
 import { AdminOverviewPage } from '@/pages/admin/AdminOverviewPage'
 import { AdminVehiclesPage } from '@/pages/admin/AdminVehiclesPage'
 import { AdminCustomersPage } from '@/pages/admin/AdminCustomersPage'
@@ -57,13 +58,20 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/vehicles" element={<VehiclesPage />} />
-              <Route path="/vehicles/new" element={<AddVehiclePage />} />
+              {/* One component, two modes -- see VehicleFormPage. */}
+              <Route path="/vehicles/new" element={<VehicleFormPage />} />
+              <Route
+                path="/vehicles/:vehicleId/edit"
+                element={<VehicleFormPage />}
+              />
+
+              {/*
+                "Hesab-fakturalar" in the nav. The page is the reference
+                system's My Cars view: one row per vehicle with its full file.
+              */}
+              <Route path="/invoices" element={<MyCarsPage />} />
 
               {/* Prompt B / later phases */}
-              <Route
-                path="/invoices"
-                element={<PlaceholderPage name="Invoices" />}
-              />
               <Route
                 path="/transactions"
                 element={<PlaceholderPage name="Transactions" />}

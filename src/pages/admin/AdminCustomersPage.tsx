@@ -2,13 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Loader2, Search, Wallet } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { callRpc } from '@/lib/admin-rpc'
+import { updateRowById } from '@/lib/admin-writes'
 import {
   displayText,
   formatCurrency,
   formatDate,
   vehicleTitle,
 } from '@/lib/format'
-import type { AdminCustomer, Transaction, Vehicle } from '@/types/database'
+import type {
+  AdminCustomer,
+  Profile,
+  Transaction,
+  Vehicle,
+} from '@/types/database'
 import { AdminError } from '@/components/AdminError'
 import { VehicleStatusBadge } from '@/components/VehicleStatusBadge'
 import { Button } from '@/components/ui/button'
@@ -42,6 +48,17 @@ export function AdminCustomersPage() {
   const [vehicles, setVehicles] = useState<Vehicle[] | null>(null)
   const [transactions, setTransactions] = useState<Transaction[] | null>(null)
   const [detailError, setDetailError] = useState<string | null>(null)
+
+  /*
+    profiles.personal_number is not part of the admin_list_customers() RPC, so
+    it is read straight from the table when a customer is opened. Admins can
+    both read and write it: profiles_select and profiles_update allow it, and
+    the guard_privileged_profile_columns trigger only fences role and balance.
+  */
+  const [personalNumber, setPersonalNumber] = useState('')
+  const [personalSaving, setPersonalSaving] = useState(false)
+  const [personalError, setPersonalError] = useState<string | null>(null)
+  const [personalSaved, setPersonalSaved] = useState(false)
 
   const [adjustFor, setAdjustFor] = useState<AdminCustomer | null>(null)
   const [delta, setDelta] = useState('')
@@ -85,7 +102,11 @@ export function AdminCustomersPage() {
     setTransactions(null)
     setDetailError(null)
 
-    const [vehicleRes, txRes] = await Promise.all([
+    setPersonalNumber('')
+    setPersonalError(null)
+    setPersonalSaved(false)
+
+    const [vehicleRes, txRes, profileRes] = await Promise.all([
       supabase
         .from('vehicles')
         .select('*')
@@ -98,6 +119,11 @@ export function AdminCustomersPage() {
         .eq('user_id', customer.id)
         .order('created_at', { ascending: false })
         .returns<Transaction[]>(),
+      supabase
+        .from('profiles')
+        .select('personal_number')
+        .eq('id', customer.id)
+        .maybeSingle<Pick<Profile, 'personal_number'>>(),
     ])
 
     if (vehicleRes.error || txRes.error) {
@@ -105,6 +131,32 @@ export function AdminCustomersPage() {
     }
     setVehicles(vehicleRes.data ?? [])
     setTransactions(txRes.data ?? [])
+    setPersonalNumber(profileRes.data?.personal_number ?? '')
+  }
+
+  /** Writes the identity number the Details panel shows to the customer. */
+  const savePersonalNumber = async () => {
+    if (!selected) return
+    setPersonalError(null)
+    setPersonalSaved(false)
+    setPersonalSaving(true)
+
+    const trimmed = personalNumber.trim()
+    const { data, error: updateError } = await updateRowById<Profile>(
+      'profiles',
+      selected.id,
+      { personal_number: trimmed === '' ? null : trimmed },
+    )
+
+    setPersonalSaving(false)
+
+    if (updateError || !data) {
+      setPersonalError(updateError ?? 'The personal number was not saved.')
+      return
+    }
+    // Confirmed from the row the database sent back, not from the input.
+    setPersonalNumber(data.personal_number ?? '')
+    setPersonalSaved(true)
   }
 
   /**
@@ -221,6 +273,44 @@ export function AdminCustomersPage() {
             </CardHeader>
           </Card>
         </div>
+
+        {/*
+          Shown to the customer on the My Cars details panel, under
+          "Personal number". Staff-verified identity data, so only an admin
+          writes it.
+        */}
+        <section className="border-border/60 bg-card shadow-soft space-y-3 rounded-2xl border p-4">
+          <h2 className="text-lg font-bold tracking-tight">Identity</h2>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-56 flex-1 space-y-2">
+              <Label htmlFor="personal-number">Personal number</Label>
+              <Input
+                id="personal-number"
+                value={personalNumber}
+                placeholder="Not set"
+                onChange={(event) => {
+                  setPersonalNumber(event.target.value)
+                  setPersonalSaved(false)
+                }}
+              />
+            </div>
+            <Button
+              variant="outline"
+              className="rounded-full px-5"
+              onClick={() => void savePersonalNumber()}
+              disabled={personalSaving}
+            >
+              {personalSaving && <Loader2 className="size-4 animate-spin" />}
+              Save
+            </Button>
+            {personalSaved && (
+              <span className="text-muted-foreground text-sm" aria-live="polite">
+                Saved.
+              </span>
+            )}
+          </div>
+          {personalError && <AdminError message={personalError} />}
+        </section>
 
         <section className="space-y-3">
           <h2 className="text-xl font-bold tracking-tight">Vehicles</h2>

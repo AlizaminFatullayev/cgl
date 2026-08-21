@@ -36,6 +36,23 @@ export function invoiceStatusLabel(status: string | null | undefined): string {
   return i18n.t(`common:invoiceStatus.${status}`, { defaultValue: status })
 }
 
+/**
+ * Display label for a stored vehicles.location value.
+ *
+ * Same rule as status: the key IS the stored English value, constrained by
+ * vehicles_location_check. Never put the translated string in a filter.
+ */
+export function locationLabel(location: string | null | undefined): string {
+  if (!location) return i18n.t('common:notAvailable')
+  return i18n.t(`cars:location.${location}`, { defaultValue: location })
+}
+
+/** Display label for a stored vehicle_photos.category value. */
+export function photoCategoryLabel(category: string | null | undefined): string {
+  if (!category) return i18n.t('common:notAvailable')
+  return i18n.t(`photos:category.${category}`, { defaultValue: category })
+}
+
 /** Display label for a stored profiles.role value. */
 export function roleLabel(role: string | null | undefined): string {
   if (!role) return i18n.t('common:notAvailable')

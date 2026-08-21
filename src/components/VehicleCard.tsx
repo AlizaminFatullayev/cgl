@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ImageOff } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Pencil } from 'lucide-react'
 import type { Vehicle } from '@/types/database'
 import { displayText, formatCurrency, formatDate, vehicleTitle } from '@/lib/format'
-import { signPhotoUrl } from '@/lib/storage'
+import { VehiclePhotoGrid } from '@/components/VehiclePhotoGrid'
 import { VehicleStatusBadge } from '@/components/VehicleStatusBadge'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import {
   Card,
   CardContent,
@@ -26,48 +28,30 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 export function VehicleCard({ vehicle }: { vehicle: VehicleWithPhotos }) {
-  const { t } = useTranslation('vehicles')
-  const [thumbnail, setThumbnail] = useState<string | null>(null)
-  const firstPhoto = vehicle.photoPaths[0] ?? null
-
-  // The bucket is private, so a viewable URL has to be signed on demand.
-  useEffect(() => {
-    let active = true
-    if (!firstPhoto) {
-      setThumbnail(null)
-      return
-    }
-    void signPhotoUrl(firstPhoto).then((url) => {
-      if (active) setThumbnail(url)
-    })
-    return () => {
-      active = false
-    }
-  }, [firstPhoto])
+  const { t } = useTranslation(['vehicles', 'common', 'photos'])
+  const title = vehicleTitle(vehicle)
 
   return (
     <Card className="border-border/60 shadow-soft transition-smooth hover:shadow-elegant">
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
-          <CardTitle className="text-base">{vehicleTitle(vehicle)}</CardTitle>
+          <CardTitle className="text-base">{title}</CardTitle>
           {/* Read-only. Status is admin-only and never editable here. */}
           <VehicleStatusBadge status={vehicle.status} />
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <div className="bg-secondary flex aspect-video items-center justify-center overflow-hidden rounded-xl">
-          {thumbnail ? (
-            <img
-              src={thumbnail}
-              alt={vehicleTitle(vehicle)}
-              className="size-full object-cover"
-              loading="lazy"
-            />
-          ) : (
-            <ImageOff className="text-muted-foreground size-6" />
-          )}
-        </div>
+        {/*
+          One cover photo on the card; the viewer it opens carries every photo
+          on the car, so the rest are one click and a swipe away rather than
+          crowding the card.
+        */}
+        <VehiclePhotoGrid
+          paths={vehicle.photoPaths}
+          title={title}
+          variant="cover"
+        />
 
         <dl className="text-sm">
           <DetailRow label={t('vin')} value={displayText(vehicle.vin)} />
@@ -98,6 +82,24 @@ export function VehicleCard({ vehicle }: { vehicle: VehicleWithPhotos }) {
             {vehicle.notes}
           </p>
         )}
+
+        {/*
+          Corrects a typo in what the customer typed. It edits only the fields
+          they supplied -- never status, never the money columns. The database
+          is what enforces that (guard_customer_vehicle_columns), not this link.
+        */}
+        <div className="flex justify-end pt-1">
+          <Link
+            to={`/vehicles/${vehicle.id}/edit`}
+            className={cn(
+              buttonVariants({ variant: 'outline' }),
+              'h-11 rounded-full px-5 md:h-9',
+            )}
+          >
+            <Pencil className="size-4" aria-hidden="true" />
+            {t('common:edit')}
+          </Link>
+        </div>
       </CardContent>
     </Card>
   )

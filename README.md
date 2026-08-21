@@ -350,3 +350,136 @@ and there should only ever be one admin.
   first.
 - **Public VIN tracking** still requires a policy decision (see the tracking
   notes) — signed-out visitors currently get no results by design.
+
+---
+
+## 9. Contact-form email notifications
+
+An Edge Function, `supabase/functions/notify-contact-message`, emails a
+notification whenever a row lands in `public.contact_messages`. It is fired by
+a Database Webhook on INSERT.
+
+**The email is an addition, never a replacement.** The row is committed before
+the function runs, and `/admin/messages` shows every submission regardless of
+whether mail went out. Nothing in the function can fail a customer's form
+submission.
+
+No new migration is needed — the webhook is created from the dashboard.
+
+### Configuration
+
+Everything is a Supabase **function secret**. None of it is in the frontend,
+in `.env.local`, in `vercel.json`, or in any committed file.
+
+| Secret | Required | Purpose |
+| --- | --- | --- |
+| `CONTACT_WEBHOOK_SECRET` | yes | Shared secret the function checks on every request. Without it the function refuses to run. |
+| `RESEND_API_KEY` | to send | Absent ⇒ the function logs and no-ops with 200. The row is still saved. |
+| `CONTACT_TO_EMAIL` | no | Defaults to `caspiangloballogistics@gmail.com`. |
+| `CONTACT_FROM_EMAIL` | no | Defaults to Resend's shared sender. See the domain note below. |
+
+### Ordered setup
+
+**1. Create the Resend account and API key**
+
+Sign up at [resend.com](https://resend.com) **using
+`caspiangloballogistics@gmail.com`** — this matters, see the domain note below.
+Then **API Keys → Create API Key** (send-only permission is enough) and copy it.
+
+**2. Generate a webhook secret**
+
+Generate it locally; it is never committed and nobody needs to memorise it:
+
+```bash
+openssl rand -hex 32
+```
+
+Keep the output for steps 3 and 5 — it must match in both.
+
+**3. Set the Supabase secrets**
+
+```bash
+npx supabase login
+npx supabase link --project-ref <your-project-ref>
+
+npx supabase secrets set RESEND_API_KEY=re_xxxxxxxxxxxx
+npx supabase secrets set CONTACT_WEBHOOK_SECRET=<the value from step 2>
+```
+
+Optional overrides:
+
+```bash
+npx supabase secrets set CONTACT_TO_EMAIL=someone@example.com
+npx supabase secrets set CONTACT_FROM_EMAIL="CGL <noreply@yourdomain.com>"
+```
+
+**4. Deploy the function**
+
+```bash
+npx supabase functions deploy notify-contact-message --no-verify-jwt
+```
+
+`--no-verify-jwt` is deliberate: the caller is a database webhook, not a
+signed-in user. The shared secret from step 2 is what authorises the request,
+and it is compared in constant time. Without this flag every webhook call
+returns 401.
+
+**5. Create the Database Webhook**
+
+**Supabase → Database → Webhooks → Create a new hook**
+
+| Field | Value |
+| --- | --- |
+| Name | `notify_contact_message` |
+| Table | `public.contact_messages` |
+| Events | **Insert** only |
+| Type | HTTP Request |
+| Method | `POST` |
+| URL | `https://<your-project-ref>.supabase.co/functions/v1/notify-contact-message` |
+| HTTP Header | `x-webhook-secret` : `<the value from step 2>` |
+
+The header is the whole security model — the endpoint is public, so a request
+without a matching secret is rejected with 401 before any mail is sent.
+
+**6. Send a test message through the live form**
+
+Submit `/contact` on the deployed site, then check, in order:
+
+1. **Supabase → Table Editor → contact_messages** — the row exists. If it does
+   not, the problem is the form or RLS, not email.
+2. Your inbox at `caspiangloballogistics@gmail.com`.
+3. **Supabase → Edge Functions → notify-contact-message → Logs** if no mail
+   arrived. The log line names the exact cause:
+   - `CONTACT_WEBHOOK_SECRET is not set` → step 3 was skipped
+   - `Rejected a request with a missing or incorrect webhook secret` → the
+     header in step 5 does not match step 3
+   - `RESEND_API_KEY is not set — skipping email` → step 3 partially done; the
+     row is safe, mail is simply off
+   - `Email provider returned 403` → the domain constraint below
+
+### Domain constraint — read before testing
+
+The client has **no verified sending domain yet**. Until one exists the
+function uses Resend's shared sender, `onboarding@resend.dev`, which has one
+hard restriction:
+
+> It can only deliver to the email address that owns the Resend account.
+
+That is why step 1 says to sign up with `caspiangloballogistics@gmail.com`. If
+the account is registered under a different address, Resend answers `403` and
+the function logs it — the row is still saved and still visible in
+`/admin/messages`.
+
+**Once the client has a domain:**
+
+1. Resend → **Domains → Add Domain**, add the DNS records it lists, wait for
+   verification.
+2. Point the sender at it — no code change, no redeploy of the app:
+
+   ```bash
+   npx supabase secrets set CONTACT_FROM_EMAIL="CGL <noreply@caspiangloballogistics.com>"
+   npx supabase functions deploy notify-contact-message --no-verify-jwt
+   ```
+
+3. Mail can then be delivered to any recipient, so `CONTACT_TO_EMAIL` becomes
+   free to change too.
