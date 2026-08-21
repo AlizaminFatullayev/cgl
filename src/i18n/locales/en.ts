@@ -403,7 +403,7 @@ export const en = {
 
     colId: 'ID',
     colRegistered: 'Car registration date',
-    colAuctionDate: 'Auction date',
+    colAuctionDate: 'Tracking ID',
     colVin: 'Vin',
     colLot: 'Lot',
     colCar: 'Car',

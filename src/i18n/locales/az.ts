@@ -407,7 +407,7 @@ export const az: Catalogue = {
 
     colId: 'ID',
     colRegistered: 'Qeydiyyat tarixi',
-    colAuctionDate: 'Auksion tarixi',
+    colAuctionDate: 'Tracking ID',
     colVin: 'Vin',
     colLot: 'Lot',
     colCar: 'Avtomobil',

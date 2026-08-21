@@ -412,7 +412,7 @@ export const ru: Catalogue = {
 
     colId: 'ID',
     colRegistered: 'Дата регистрации',
-    colAuctionDate: 'Дата аукциона',
+    colAuctionDate: 'Tracking ID',
     colVin: 'Vin',
     colLot: 'Лот',
     colCar: 'Автомобиль',
